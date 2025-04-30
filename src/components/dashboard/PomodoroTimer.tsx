@@ -90,7 +90,11 @@ const PomodoroTimer = () => {
   
   // Format total time studied (from both the timer and overall study time)
   const formatTotalTime = () => {
-    const totalMinutes = Math.floor(totalSecondsElapsed / 60) + summary.studyTimeCompleted;
+    // Calculate the current session minutes from seconds
+    const currentSessionMinutes = Math.floor(totalSecondsElapsed / 60);
+    
+    // Add the current session minutes to the completed study time from the context
+    const totalMinutes = currentSessionMinutes + summary.studyTimeCompleted;
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     
