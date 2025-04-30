@@ -27,7 +27,7 @@ const Header = () => {
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <BookOpen className="h-6 w-6 text-studypurple-400" />
-          <span className="text-xl font-bold gradient-text">StudyFlow</span>
+          <span className="text-xl font-bold gradient-text">CupCake's StudyFlow</span>
         </Link>
 
         <nav className="hidden md:flex items-center space-x-6">

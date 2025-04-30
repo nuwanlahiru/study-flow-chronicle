@@ -9,11 +9,11 @@ const Footer = () => {
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-studypurple-400" />
           <p className="text-sm leading-loose text-center md:text-left font-medium gradient-text">
-            StudyFlow
+            CupCake's StudyFlow
           </p>
         </div>
         <p className="text-sm text-muted-foreground text-center md:text-left">
-          &copy; {new Date().getFullYear()} StudyFlow. All rights reserved.
+          &copy; {new Date().getFullYear()} CupCake's StudyFlow. By Lahiru NK @ ScrollLoop.com All rights reserved.
         </p>
       </div>
     </footer>

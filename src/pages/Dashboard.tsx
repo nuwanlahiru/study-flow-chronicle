@@ -6,6 +6,7 @@ import { Navigate, Link } from "react-router-dom";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import RecentSessions from "@/components/dashboard/RecentSessions";
 import ProgressChart from "@/components/dashboard/ProgressChart";
+import SubjectSessionChart from "@/components/dashboard/SubjectSessionChart";
 import { useStudy } from "@/contexts/StudyContext";
 import { Book, Clock, Calendar, CalendarCheck, Plus } from "lucide-react";
 
@@ -58,7 +59,7 @@ const Dashboard = () => {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-studypurple-100">
             <Book className="h-6 w-6 text-studypurple-400" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold">Get Started with StudyFlow</h2>
+          <h2 className="mt-4 text-lg font-semibold">Get Started with CupCake's StudyFlow</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Create your first subject to begin tracking your study sessions
           </p>
@@ -95,6 +96,8 @@ const Dashboard = () => {
               icon={<Calendar className="h-4 w-4" />}
             />
           </div>
+
+          <SubjectSessionChart />
 
           <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <RecentSessions />
