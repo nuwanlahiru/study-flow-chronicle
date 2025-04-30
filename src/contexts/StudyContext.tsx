@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Subject, Session, StudySummary } from "@/types";
 import { useAuth } from "./AuthContext";
@@ -11,7 +10,7 @@ interface StudyContextType {
   addSubject: (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => void;
   updateSubject: (id: string, subject: Partial<Subject>) => void;
   deleteSubject: (id: string) => void;
-  addSession: (session: Omit<Session, "id" | "status">) => void;
+  addSession: (session: Omit<Session, "id">) => void;
   updateSessionStatus: (id: string, status: "pending" | "completed" | "skipped") => void;
   deleteSession: (id: string) => void;
   loading: boolean;
@@ -202,7 +201,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     toast.success("Subject and its sessions deleted");
   };
 
-  const addSession = (session: Omit<Session, "id" | "status">) => {
+  const addSession = (session: Omit<Session, "id">) => {
     if (!user) {
       toast.error("You must be logged in to add a session");
       return;
@@ -210,7 +209,6 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     
     const newSession: Session = {
       id: `session_${Date.now()}`,
-      status: "pending",
       ...session,
     };
     
