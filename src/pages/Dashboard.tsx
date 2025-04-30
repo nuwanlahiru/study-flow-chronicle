@@ -7,8 +7,11 @@ import SummaryCard from "@/components/dashboard/SummaryCard";
 import RecentSessions from "@/components/dashboard/RecentSessions";
 import ProgressChart from "@/components/dashboard/ProgressChart";
 import SubjectSessionChart from "@/components/dashboard/SubjectSessionChart";
+import PomodoroTimer from "@/components/dashboard/PomodoroTimer";
+import SubjectMiniSummary from "@/components/dashboard/SubjectMiniSummary";
 import { useStudy } from "@/contexts/StudyContext";
 import { Book, Clock, Calendar, CalendarCheck, Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -46,9 +49,9 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <div className="flex space-x-2">
-          <Link to="/sessions/new">
+          <Link to="/subjects">
             <Button className="gradient-bg">
-              <Plus className="mr-2 h-4 w-4" /> Add Session
+              <Plus className="mr-2 h-4 w-4" /> Add Subject
             </Button>
           </Link>
         </div>
@@ -95,6 +98,25 @@ const Dashboard = () => {
               progress={(summary.completedSessions / summary.totalSessions) * 100 || 0}
               icon={<Calendar className="h-4 w-4" />}
             />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="md:col-span-1">
+              <CardHeader>
+                <CardTitle>Subjects at a Glance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {subjects.map(subject => (
+                    <SubjectMiniSummary key={subject.id} subject={subject} sessions={sessions} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="md:col-span-3">
+              <PomodoroTimer />
+            </div>
           </div>
 
           <SubjectSessionChart />

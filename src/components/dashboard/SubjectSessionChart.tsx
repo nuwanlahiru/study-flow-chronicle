@@ -2,10 +2,10 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudy } from "@/contexts/StudyContext";
-import { Check, Circle, X } from "lucide-react";
+import { Check, Circle, Plus, X } from "lucide-react";
 
 const SubjectSessionChart = () => {
-  const { subjects, sessions, updateSessionStatus } = useStudy();
+  const { subjects, sessions, updateSessionStatus, addSession } = useStudy();
   
   // Group sessions by subject
   const sessionsBySubject = subjects.reduce((acc, subject) => {
@@ -14,41 +14,39 @@ const SubjectSessionChart = () => {
     return acc;
   }, {} as Record<string, typeof sessions>);
   
-  // Find the maximum number of sessions for any subject
+  // Find the maximum number of sessions for any subject to determine column width
   const maxSessions = Object.values(sessionsBySubject).reduce((max, subjectSessions) => 
     Math.max(max, subjectSessions.length), 0);
   
-  // Use at least 21 sessions (as shown in the reference image)
-  const totalSessionColumns = Math.max(maxSessions, 21);
+  // Add one more column for the "add session" button
+  const totalColumns = maxSessions + 1;
   
-  // Create array of session numbers (S1, S2, S3, etc.)
-  const sessionNumbers = Array.from({ length: totalSessionColumns }, (_, i) => `S${i+1}`);
-
   // Handle session click
-  const handleSessionClick = (session: typeof sessions[0] | undefined, subjectId: string, sessionIndex: number) => {
-    if (session) {
-      // If session exists, update its status
-      if (session.status === "pending") {
-        updateSessionStatus(session.id, "completed");
-      } else if (session.status === "completed") {
-        updateSessionStatus(session.id, "skipped");
-      } else {
-        updateSessionStatus(session.id, "pending");
-      }
+  const handleSessionClick = (session: typeof sessions[0]) => {
+    if (session.status === "pending") {
+      updateSessionStatus(session.id, "completed");
+    } else if (session.status === "completed") {
+      updateSessionStatus(session.id, "skipped");
     } else {
-      // If session doesn't exist, create a new one
-      const newSession = {
-        title: `Session ${sessionIndex + 1}`,
-        description: "",
-        duration: 30, // Default duration (30 minutes)
-        date: new Date().toISOString(),
-        subjectId
-      };
-      
-      // Create the session with pending status
-      const { addSession } = useStudy();
-      addSession(newSession);
+      updateSessionStatus(session.id, "pending");
     }
+  };
+  
+  // Handle adding a new session
+  const handleAddSession = (subjectId: string) => {
+    const subjectSessions = sessionsBySubject[subjectId] || [];
+    const sessionNumber = subjectSessions.length + 1;
+    
+    const newSession = {
+      title: `S${sessionNumber}`,
+      description: "",
+      duration: 30, // Default duration (30 minutes)
+      date: new Date().toISOString(),
+      subjectId,
+      status: "pending" // Important: Add the status property
+    };
+    
+    addSession(newSession);
   };
   
   return (
@@ -65,53 +63,80 @@ const SubjectSessionChart = () => {
                     style={{ minWidth: "150px" }}>
                   Subject
                 </th>
-                {sessionNumbers.map(sessionNum => (
-                  <th key={sessionNum} 
-                      className="px-2 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider"
-                      style={{ minWidth: "40px" }}>
-                    {sessionNum}
-                  </th>
-                ))}
+                {Array.from({ length: totalColumns }).map((_, index) => {
+                  const columnNumber = index + 1;
+                  return (
+                    <th key={`col-${columnNumber}`} 
+                        className="px-2 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                        style={{ minWidth: "40px" }}>
+                      {index < maxSessions ? `S${columnNumber}` : ""}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
-              {subjects.map(subject => (
-                <tr key={subject.id} className="border-t border-border">
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: subject.color }}></div>
-                      <div className="text-sm font-medium text-foreground">{subject.name}</div>
-                    </div>
-                  </td>
-                  {sessionNumbers.map((sessionNum, index) => {
-                    const subjectSessions = sessionsBySubject[subject.id] || [];
-                    const session = subjectSessions[index];
+              {subjects.map(subject => {
+                const subjectSessions = sessionsBySubject[subject.id] || [];
+                subjectSessions.sort((a, b) => {
+                  // Extract session numbers from titles (S1, S2, etc.)
+                  const numA = parseInt(a.title.replace(/\D/g, '') || '0');
+                  const numB = parseInt(b.title.replace(/\D/g, '') || '0');
+                  return numA - numB;
+                });
+                
+                return (
+                  <tr key={subject.id} className="border-t border-border">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: subject.color }}></div>
+                        <div className="text-sm font-medium text-foreground">{subject.name}</div>
+                      </div>
+                    </td>
                     
-                    return (
-                      <td key={`${subject.id}-${sessionNum}`} 
-                          className="p-1 text-center"
-                          onClick={() => handleSessionClick(session, subject.id, index)}>
-                        <div 
-                          className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-                            !session ? 'bg-muted text-muted-foreground hover:bg-muted/80' : 
-                            session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
-                            session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
-                            'bg-muted text-muted-foreground hover:bg-muted/80'
-                          }`}
-                        >
-                          {!session || session.status === "pending" ? (
-                            <Circle size={16} />
-                          ) : session.status === "completed" ? (
-                            <Check size={16} />
+                    {/* Render existing sessions */}
+                    {Array.from({ length: maxSessions }).map((_, index) => {
+                      const session = subjectSessions[index];
+                      
+                      return (
+                        <td key={`${subject.id}-session-${index}`} 
+                            className="p-1 text-center">
+                          {session ? (
+                            <div 
+                              onClick={() => handleSessionClick(session)}
+                              className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                                session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
+                                session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
+                                'bg-muted text-muted-foreground hover:bg-muted/80'
+                              }`}
+                            >
+                              {session.status === "pending" ? (
+                                <Circle size={16} />
+                              ) : session.status === "completed" ? (
+                                <Check size={16} />
+                              ) : (
+                                <X size={16} />
+                              )}
+                            </div>
                           ) : (
-                            <X size={16} />
+                            <div className="w-8 h-8"></div>
                           )}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                        </td>
+                      );
+                    })}
+                    
+                    {/* Add session button */}
+                    <td className="p-1 text-center">
+                      <div 
+                        onClick={() => handleAddSession(subject.id)}
+                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-muted-foreground hover:bg-muted/80"
+                      >
+                        <Plus size={16} />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           
