@@ -1,17 +1,15 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { BookOpen, BarChart3, Calendar, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-
 const Index = () => {
-  const { user } = useAuth();
-
-  return (
-    <div className="flex flex-col min-h-[calc(100vh-16rem)]">
+  const {
+    user
+  } = useAuth();
+  return <div className="flex flex-col min-h-[calc(100vh-16rem)]">
       {/* Hero Section */}
-      <section className="py-12 md:py-16 lg:py-20">
+      <section className="py-12 md:py-16 lg:py-[33px]">
         <div className="container px-4 md:px-6">
           <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_500px]">
             <div className="flex flex-col justify-center space-y-4">
@@ -29,13 +27,11 @@ const Index = () => {
                     {user ? "Go to Dashboard" : "Get Started"}
                   </Button>
                 </Link>
-                {!user && (
-                  <Link to="/login">
+                {!user && <Link to="/login">
                     <Button size="lg" variant="outline">
                       Log In
                     </Button>
-                  </Link>
-                )}
+                  </Link>}
               </div>
             </div>
             <div className="flex items-center justify-center">
@@ -49,12 +45,16 @@ const Index = () => {
                   </div>
                 </div>
                 <div className="absolute bottom-20 left-10">
-                  <div className="h-16 w-16 rounded-full bg-studypurple-200 flex items-center justify-center animate-bounce" style={{ animationDelay: '0.2s' }}>
+                  <div className="h-16 w-16 rounded-full bg-studypurple-200 flex items-center justify-center animate-bounce" style={{
+                  animationDelay: '0.2s'
+                }}>
                     <BarChart3 className="h-8 w-8 text-studypurple-500" />
                   </div>
                 </div>
                 <div className="absolute bottom-10 right-20">
-                  <div className="h-16 w-16 rounded-full bg-studypurple-200 flex items-center justify-center animate-bounce" style={{ animationDelay: '0.4s' }}>
+                  <div className="h-16 w-16 rounded-full bg-studypurple-200 flex items-center justify-center animate-bounce" style={{
+                  animationDelay: '0.4s'
+                }}>
                     <Activity className="h-8 w-8 text-studypurple-500" />
                   </div>
                 </div>
@@ -108,8 +108,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
