@@ -48,13 +48,6 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex space-x-2">
-          <Link to="/subjects">
-            <Button className="gradient-bg">
-              <Plus className="mr-2 h-4 w-4" /> Add Subject
-            </Button>
-          </Link>
-        </div>
       </div>
 
       {subjects.length === 0 ? (

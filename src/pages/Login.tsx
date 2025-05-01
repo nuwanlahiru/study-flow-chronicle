@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const Login = () => {
-  const { user, login, loading } = useAuth();
+  const { user, login, loginWithGoogle, loading } = useAuth();
   
   // If user is already logged in, redirect to dashboard
   if (user) {
@@ -30,11 +30,12 @@ const Login = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button 
-            onClick={login} 
+            onClick={loginWithGoogle} 
             disabled={loading} 
-            className="w-full gradient-bg"
+            className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
             size="lg"
           >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" className="h-5 w-5 mr-2" />
             {loading ? "Logging in..." : "Login with Google"}
           </Button>
           <div className="relative">
@@ -43,12 +44,20 @@ const Login = () => {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Mock Login
+                or
               </span>
             </div>
           </div>
+          <Button 
+            onClick={login} 
+            disabled={loading} 
+            className="w-full gradient-bg"
+            size="lg"
+          >
+            {loading ? "Logging in..." : "Use Demo Account"}
+          </Button>
           <p className="text-xs text-center text-muted-foreground">
-            This is a demo application. In the final version, this would connect to Firebase for Google authentication.
+            The demo account allows you to try the application without creating an account.
           </p>
         </CardContent>
         <CardFooter className="flex flex-col">

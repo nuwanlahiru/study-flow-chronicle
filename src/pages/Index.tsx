@@ -17,7 +17,7 @@ const Index = () => {
             <div className="flex flex-col justify-center space-y-4">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
-                  Track Your Study Progress with <span className="gradient-text">StudyFlow</span>
+                  Track Your Study Progress with <span className="gradient-text">CupCake's StudyFlow</span>
                 </h1>
                 <p className="max-w-[600px] text-gray-500 md:text-xl">
                   Organize your subjects, plan study sessions, and visualize your progress with our comprehensive study tracking system.
