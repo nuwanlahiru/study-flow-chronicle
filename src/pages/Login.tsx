@@ -1,13 +1,26 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { toast } from "@/components/ui/sonner";
 
 const Login = () => {
   const { user, login, loginWithGoogle, loading } = useAuth();
+  const [searchParams] = useSearchParams();
+  
+  // Check for error in URL params
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
+      console.error("Auth error:", error, errorDescription);
+      toast.error(errorDescription || "Authentication error occurred");
+    }
+  }, [searchParams]);
   
   // If user is already logged in, redirect to dashboard
   if (user) {

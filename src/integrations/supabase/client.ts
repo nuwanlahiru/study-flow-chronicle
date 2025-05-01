@@ -6,12 +6,16 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://mnsxsjmyugxfhysfawxh.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uc3hzam15dWd4Zmh5c2Zhd3hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwNzE1MDUsImV4cCI6MjA2MTY0NzUwNX0.caviDcpTYy_UIAsgokPKgRbCVQa8mL-BaBfc0xoM8uw";
 
+// Use window.location.origin to dynamically get the current domain
+const SITE_URL = typeof window !== 'undefined' ? window.location.origin : '';
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    redirectTo: SITE_URL + '/dashboard'
   }
 });
