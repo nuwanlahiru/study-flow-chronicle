@@ -17,7 +17,7 @@ const Index = () => {
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl my-0 lg:text-7xl">
                   Track Your Study Progress with <span className="gradient-text">CupCake's StudyFlow</span>
                 </h1>
-                <p className="max-w-[600px] text-gray-500 md:text-xl">
+                <p className="max-w-[600px] text-gray-500 md:text-xl py-[12px]">
                   Organize your subjects, plan study sessions, and visualize your progress with our comprehensive study tracking system.
                 </p>
               </div>
@@ -28,7 +28,7 @@ const Index = () => {
                   </Button>
                 </Link>
                 {!user && <Link to="/login">
-                    <Button size="lg" variant="outline">
+                    <Button size="lg" variant="outline" className="px-[31px] mx-[17px]">
                       Log In
                     </Button>
                   </Link>}
