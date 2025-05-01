@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (currentSession?.user) {
           const userData: User = {
             id: currentSession.user.id,
-            name: currentSession.user.user_metadata.full_name || 'User',
+            name: currentSession.user.user_metadata.full_name || currentSession.user.user_metadata.name || 'User',
             email: currentSession.user.email || '',
             photoURL: currentSession.user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentSession.user.id}`
           };
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (currentSession?.user) {
         const userData: User = {
           id: currentSession.user.id,
-          name: currentSession.user.user_metadata.full_name || 'User',
+          name: currentSession.user.user_metadata.full_name || currentSession.user.user_metadata.name || 'User',
           email: currentSession.user.email || '',
           photoURL: currentSession.user.user_metadata.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentSession.user.id}`
         };
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/dashboard'
+          redirectTo: `${window.location.origin}/dashboard`
         }
       });
       
