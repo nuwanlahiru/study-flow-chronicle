@@ -59,7 +59,7 @@ const Login = () => {
           <Button onClick={login} disabled={loading} className="w-full gradient-bg" size="lg">
             {loading ? "Logging in..." : "Use Demo Account"}
           </Button>
-          <p className="text-xs text-center text-muted-foreground">* DEMO ACCOUNT TEMPORARY NOT WORKING
+          <p className="text-xs text-center text-muted-foreground">* DEMO ACCOUNT TEMPORARY NOT WORKING 
 The demo account allows you to try the application without creating an account.</p>
         </CardContent>
         <CardFooter className="flex flex-col">
