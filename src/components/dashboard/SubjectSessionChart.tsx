@@ -1,11 +1,28 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudy } from "@/contexts/StudyContext";
-import { Check, Circle, Plus, X } from "lucide-react";
+import { Check, Circle, Plus, X, Trash, PlusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import SubjectForm from "@/components/subjects/SubjectForm";
+import { Subject } from "@/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const SubjectSessionChart = () => {
-  const { subjects, sessions, updateSessionStatus, addSession } = useStudy();
+  const { subjects, sessions, updateSessionStatus, addSession, deleteSession, deleteSubject, addSubject } = useStudy();
+  const [subjectToDelete, setSubjectToDelete] = useState<string | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<{subjectId: string, sessionId: string} | null>(null);
+  const [isSubjectFormOpen, setIsSubjectFormOpen] = useState(false);
   
   // Group sessions by subject
   const sessionsBySubject = subjects.reduce((acc, subject) => {
@@ -31,6 +48,11 @@ const SubjectSessionChart = () => {
       updateSessionStatus(session.id, "pending");
     }
   };
+
+  // Handle removing a session
+  const handleRemoveSession = (subjectId: string, sessionId: string) => {
+    setSessionToDelete({ subjectId, sessionId });
+  };
   
   // Handle adding a new session
   const handleAddSession = (subjectId: string) => {
@@ -43,16 +65,35 @@ const SubjectSessionChart = () => {
       duration: 30, // Default duration (30 minutes)
       date: new Date().toISOString(),
       subjectId,
-      status: "pending" // Important: Add the status property
+      status: "pending" as "pending" | "completed" | "skipped" // Explicitly type as one of the allowed values
     };
     
     addSession(newSession);
   };
+
+  // Handle removing a subject
+  const handleRemoveSubject = (subjectId: string) => {
+    setSubjectToDelete(subjectId);
+  };
+
+  // Handle adding a new subject
+  const handleSaveSubject = (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
+    addSubject(subject);
+    setIsSubjectFormOpen(false);
+  };
   
   return (
     <Card className="col-span-1 md:col-span-3 overflow-x-auto">
-      <CardHeader>
+      <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>Subject-Session Chart</CardTitle>
+        <Button 
+          onClick={() => setIsSubjectFormOpen(true)} 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-1"
+        >
+          <PlusCircle className="h-4 w-4" /> Add Subject
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="min-w-full">
@@ -73,6 +114,9 @@ const SubjectSessionChart = () => {
                     </th>
                   );
                 })}
+                <th className="px-2 py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                    style={{ minWidth: "40px" }}>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -102,21 +146,30 @@ const SubjectSessionChart = () => {
                         <td key={`${subject.id}-session-${index}`} 
                             className="p-1 text-center">
                           {session ? (
-                            <div 
-                              onClick={() => handleSessionClick(session)}
-                              className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-                                session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
-                                session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
-                                'bg-muted text-muted-foreground hover:bg-muted/80'
-                              }`}
-                            >
-                              {session.status === "pending" ? (
-                                <Circle size={16} />
-                              ) : session.status === "completed" ? (
-                                <Check size={16} />
-                              ) : (
-                                <X size={16} />
-                              )}
+                            <div className="relative">
+                              <div 
+                                onClick={() => handleSessionClick(session)}
+                                className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                                  session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
+                                  session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
+                                  'bg-muted text-muted-foreground hover:bg-muted/80'
+                                }`}
+                              >
+                                {session.status === "pending" ? (
+                                  <Circle size={16} />
+                                ) : session.status === "completed" ? (
+                                  <Check size={16} />
+                                ) : (
+                                  <X size={16} />
+                                )}
+                              </div>
+                              <button 
+                                onClick={() => handleRemoveSession(subject.id, session.id)}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-destructive/80 hover:bg-destructive text-white rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                                aria-label="Delete session"
+                              >
+                                <X size={10} />
+                              </button>
                             </div>
                           ) : (
                             <div className="w-8 h-8"></div>
@@ -134,6 +187,17 @@ const SubjectSessionChart = () => {
                         <Plus size={16} />
                       </div>
                     </td>
+
+                    {/* Remove subject button */}
+                    <td className="p-1 text-center">
+                      <button
+                        onClick={() => handleRemoveSubject(subject.id)}
+                        className="text-destructive/70 hover:text-destructive transition-colors"
+                        aria-label="Delete subject"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -143,10 +207,75 @@ const SubjectSessionChart = () => {
           {subjects.length === 0 && (
             <div className="text-center py-10">
               <p className="text-muted-foreground">No subjects available</p>
+              <Button 
+                onClick={() => setIsSubjectFormOpen(true)} 
+                className="mt-4 gradient-bg"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Your First Subject
+              </Button>
             </div>
           )}
         </div>
       </CardContent>
+
+      {/* Subject Form Dialog */}
+      <SubjectForm
+        isOpen={isSubjectFormOpen}
+        onClose={() => setIsSubjectFormOpen(false)}
+        onSave={handleSaveSubject}
+      />
+
+      {/* Confirm Session Deletion Dialog */}
+      <AlertDialog open={!!sessionToDelete} onOpenChange={() => setSessionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this session? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (sessionToDelete) {
+                  deleteSession(sessionToDelete.sessionId);
+                  setSessionToDelete(null);
+                }
+              }} 
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Subject Deletion Dialog */}
+      <AlertDialog open={!!subjectToDelete} onOpenChange={() => setSubjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Subject</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this subject? All associated sessions will also be deleted. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (subjectToDelete) {
+                  deleteSubject(subjectToDelete);
+                  setSubjectToDelete(null);
+                }
+              }} 
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

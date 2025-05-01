@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -90,11 +89,12 @@ const Sessions = () => {
     setIsFormOpen(true);
   };
 
-  const handleSaveSession = (sessionData: Omit<Session, "id" | "status">) => {
+  const handleSaveSession = (sessionData: Omit<Session, "id">) => {
     if (currentSession) {
-      // For editing, we need to preserve the status
-      updateSessionStatus(currentSession.id, sessionData.status || currentSession.status);
+      // For editing, preserve the existing status
+      updateSessionStatus(currentSession.id, sessionData.status);
     } else {
+      // For new sessions, use the provided status
       addSession(sessionData);
     }
     

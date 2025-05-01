@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Check, X, Circle } from 'lucide-react';
+import { Check, X, Clock } from 'lucide-react';
 import { Subject, Session } from '@/types';
 
 interface SubjectMiniSummaryProps {
@@ -34,7 +34,7 @@ const SubjectMiniSummary = ({ subject, sessions }: SubjectMiniSummaryProps) => {
         )}
         {pending > 0 && (
           <div className="flex items-center text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-            <Circle size={12} className="mr-0.5" />
+            <Clock size={12} className="mr-0.5" />
             {pending}
           </div>
         )}
