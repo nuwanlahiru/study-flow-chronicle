@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Subject, Session, StudySummary } from "@/types";
 import { useAuth } from "./AuthContext";
@@ -67,7 +66,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from('subjects')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id as string);
     
     if (error) {
       console.error("Error fetching subjects:", error);
@@ -81,7 +80,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     // Transform the data to match the Subject type
-    const transformedSubjects: Subject[] = data.map(subject => ({
+    const transformedSubjects: Subject[] = data.map((subject: any) => ({
       id: subject.id,
       name: subject.name,
       color: subject.color,
@@ -101,7 +100,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id as string);
     
     if (error) {
       console.error("Error fetching sessions:", error);
@@ -115,7 +114,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     // Transform the data to match the Session type
-    const transformedSessions: Session[] = data.map(session => ({
+    const transformedSessions: Session[] = data.map((session: any) => ({
       id: session.id,
       title: session.title,
       description: session.description || "",
@@ -236,10 +235,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      // Define the type for the insert data
-      type SubjectInsert = Database['public']['Tables']['subjects']['Insert'];
-      
-      const insertData: SubjectInsert = {
+      const insertData = {
         name: subject.name,
         color: subject.color,
         user_id: user.id
@@ -248,7 +244,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from('subjects')
         .insert(insertData)
-        .select('*')
+        .select()
         .single();
       
       if (error) throw error;
@@ -277,9 +273,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
 
   const updateSubject = async (id: string, subjectUpdate: Partial<Subject>) => {
     try {
-      // Define type for the update data
-      type SubjectUpdate = Database['public']['Tables']['subjects']['Update'];
-      const updateData: SubjectUpdate = {};
+      const updateData: any = {};
       
       if (subjectUpdate.name) updateData.name = subjectUpdate.name;
       if (subjectUpdate.color) updateData.color = subjectUpdate.color;
@@ -332,10 +326,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      // Define the type for the insert data
-      type SessionInsert = Database['public']['Tables']['sessions']['Insert'];
-      
-      const insertData: SessionInsert = {
+      const insertData = {
         title: session.title,
         description: session.description,
         duration: session.duration,
@@ -348,7 +339,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase
         .from('sessions')
         .insert(insertData)
-        .select('*')
+        .select()
         .single();
       
       if (error) throw error;
