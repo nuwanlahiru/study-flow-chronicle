@@ -7,7 +7,7 @@ import { toast } from "@/components/ui/sonner";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: () => Promise<void>;
+  login: (type?: "google" | "demo") => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -29,20 +29,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async () => {
+  const login = async (type: "google" | "demo" = "demo") => {
     try {
       setLoading(true);
-      // Mock login for now - will be replaced with Firebase Google auth
-      const mockUser: User = {
-        id: "user123",
-        name: "Demo User",
-        email: "demo@example.com",
-        photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo"
-      };
+      
+      // Different user data based on login type
+      let mockUser: User;
+      
+      if (type === "google") {
+        // In a real app, this would be replaced with actual Google Auth
+        // For now, we'll simulate a Google user
+        mockUser = {
+          id: "google-user-123",
+          name: "Google User",
+          email: "google@example.com",
+          photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=google"
+        };
+        toast.success("Successfully logged in with Google!");
+      } else {
+        // Demo user
+        mockUser = {
+          id: "user123",
+          name: "Demo User",
+          email: "demo@example.com",
+          photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo"
+        };
+        toast.success("Demo login successful!");
+      }
       
       setUser(mockUser);
       localStorage.setItem("study-flow-user", JSON.stringify(mockUser));
-      toast.success("Successfully logged in!");
       navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);

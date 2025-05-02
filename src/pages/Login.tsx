@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
+import { BookOpen, LogIn } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
@@ -30,25 +30,52 @@ const Login = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button 
-            onClick={login} 
+            onClick={() => login("google")} 
             disabled={loading} 
-            className="w-full gradient-bg"
+            className="w-full bg-white text-black border border-gray-300 hover:bg-gray-100"
             size="lg"
           >
+            <img 
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+              alt="Google logo" 
+              className="h-5 w-5 mr-2" 
+            />
             {loading ? "Logging in..." : "Login with Google"}
           </Button>
+          
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Mock Login
+                OR
+              </span>
+            </div>
+          </div>
+
+          <Button 
+            onClick={() => login("demo")} 
+            disabled={loading} 
+            className="w-full gradient-bg"
+            size="lg"
+          >
+            <LogIn className="mr-2 h-5 w-5" />
+            {loading ? "Logging in..." : "Use Demo Account"}
+          </Button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Demo App Info
               </span>
             </div>
           </div>
           <p className="text-xs text-center text-muted-foreground">
-            This is a demo application. In the final version, this would connect to Firebase for Google authentication.
+            This is a demo application that simulates authentication. In a production app, these would connect to actual OAuth providers.
           </p>
         </CardContent>
         <CardFooter className="flex flex-col">

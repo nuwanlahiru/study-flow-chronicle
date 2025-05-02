@@ -1,6 +1,7 @@
 
 import React from "react";
 import { BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -12,9 +13,22 @@ const Footer = () => {
             CupCake's StudyFlow
           </p>
         </div>
-        <p className="text-sm text-muted-foreground text-center md:text-left">
-          &copy; {new Date().getFullYear()} CupCake's StudyFlow. By Lahiru NK @ ScrollLoop.com All rights reserved.
-        </p>
+        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+          <Link to="/login" className="text-sm text-studypurple-400 hover:underline">
+            Login
+          </Link>
+          <p className="text-sm text-muted-foreground text-center md:text-left">
+            &copy; {new Date().getFullYear()} CupCake's StudyFlow. By Lahiru NK @ 
+            <a 
+              href="https://ScrollLoop.com" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:underline"
+            >
+              ScrollLoop.com
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );
