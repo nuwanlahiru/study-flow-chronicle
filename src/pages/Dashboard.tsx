@@ -86,12 +86,14 @@ const Dashboard = () => {
               icon={<Book className="h-4 w-4" />}
             />
             <SummaryCard
-              title="Completion Rate"
-              value={`${Math.round((summary.completedSessions / summary.totalSessions) * 100) || 0}%`}
-              progress={(summary.completedSessions / summary.totalSessions) * 100 || 0}
+              title="Total Sessions"
+              value={summary.totalSessions}
               icon={<Calendar className="h-4 w-4" />}
             />
           </div>
+
+          {/* Subject Session Chart - Moved to top position for visibility */}
+          <SubjectSessionChart />
 
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="md:col-span-1">
@@ -111,8 +113,6 @@ const Dashboard = () => {
               <PomodoroTimer />
             </div>
           </div>
-
-          <SubjectSessionChart />
 
           <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <RecentSessions />

@@ -1,14 +1,19 @@
+
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
+
 const Layout = () => {
-  return <div className="flex min-h-screen flex-col">
+  return (
+    <div className="flex min-h-screen flex-col">
       <Header />
-      <main className="flex-1 container md:py-12 py-0">
+      <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
         <Outlet />
       </main>
       <Footer />
-    </div>;
+    </div>
+  );
 };
+
 export default Layout;

@@ -13,7 +13,7 @@ const Footer = () => {
           </p>
         </div>
         <p className="text-sm text-muted-foreground text-center">
-          &copy; {new Date().getFullYear()} CupCake's StudyFlow. By Lahiru NK @ <a href="https://scrollloop.com" className="hover:underline text-studypurple-500">ScrollLoop.com</a> All rights reserved.
+          &copy; {new Date().getFullYear()} CupCake's StudyFlow. By Lahiru NK @ <a href="https://scrollloop.com" target="_blank" rel="noopener noreferrer" className="hover:underline text-studypurple-500">ScrollLoop.com</a> All rights reserved.
         </p>
       </div>
     </footer>
