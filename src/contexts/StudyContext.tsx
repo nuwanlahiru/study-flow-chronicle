@@ -67,7 +67,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from('subjects')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id as any);
     
     if (error) {
       console.error("Error fetching subjects:", error);
@@ -81,7 +81,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     // Transform the data to match the Subject type
-    const transformedSubjects: Subject[] = data.map((subject) => ({
+    const transformedSubjects: Subject[] = data.map((subject: any) => ({
       id: subject.id,
       name: subject.name,
       color: subject.color,
@@ -101,7 +101,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id as any);
     
     if (error) {
       console.error("Error fetching sessions:", error);
@@ -115,7 +115,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     // Transform the data to match the Session type
-    const transformedSessions: Session[] = data.map((session) => ({
+    const transformedSessions: Session[] = data.map((session: any) => ({
       id: session.id,
       title: session.title,
       description: session.description || "",
@@ -242,7 +242,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         user_id: user.id
       };
       
-      // Use type casting to bypass TypeScript error
+      // Use type assertion to bypass TypeScript error
       const { data, error } = await supabase
         .from('subjects')
         .insert(insertData as any)
@@ -282,7 +282,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       
       const { error } = await supabase
         .from('subjects')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', id as any);
       
       if (error) throw error;
@@ -338,7 +338,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         user_id: user.id
       };
       
-      // Use type casting to bypass TypeScript error
+      // Use type assertion to bypass TypeScript error
       const { data, error } = await supabase
         .from('sessions')
         .insert(insertData as any)

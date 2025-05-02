@@ -7,6 +7,7 @@ import SummaryCard from "@/components/dashboard/SummaryCard";
 import RecentSessions from "@/components/dashboard/RecentSessions";
 import ProgressChart from "@/components/dashboard/ProgressChart";
 import SubjectSessionChart from "@/components/dashboard/SubjectSessionChart";
+import SessionStatusGrid from "@/components/dashboard/SessionStatusGrid";
 import PomodoroTimer from "@/components/dashboard/PomodoroTimer";
 import SubjectMiniSummary from "@/components/dashboard/SubjectMiniSummary";
 import { useStudy } from "@/contexts/StudyContext";
@@ -69,6 +70,9 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
+          {/* Session Status Grid - Added at the top */}
+          <SessionStatusGrid />
+
           <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             <SummaryCard
               title="Total Study Time"
@@ -92,7 +96,7 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Subject Session Chart - Moved to top position for visibility */}
+          {/* Subject Session Chart */}
           <SubjectSessionChart />
 
           <div className="grid gap-4 md:grid-cols-4">
