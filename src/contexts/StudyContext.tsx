@@ -1,10 +1,7 @@
-
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Subject, Session, StudySummary } from "@/types";
 import { useAuth } from "./AuthContext";
 import { toast } from "@/components/ui/sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 
 interface StudyContextType {
   subjects: Subject[];
@@ -36,14 +33,21 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
 
-  // Load data from Supabase
+  // Load data from localStorage or eventually from Firebase
   useEffect(() => {
     if (user) {
-      const loadData = async () => {
+      const loadData = () => {
         try {
-          setLoading(true);
-          await fetchSubjects();
-          await fetchSessions();
+          const storedSubjects = localStorage.getItem(`study-flow-subjects-${user.id}`);
+          const storedSessions = localStorage.getItem(`study-flow-sessions-${user.id}`);
+          
+          if (storedSubjects) {
+            setSubjects(JSON.parse(storedSubjects));
+          }
+          
+          if (storedSessions) {
+            setSessions(JSON.parse(storedSessions));
+          }
         } catch (error) {
           console.error("Error loading data:", error);
           toast.error("Failed to load your study data");
@@ -60,74 +64,6 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user]);
 
-  // Fetch subjects from Supabase
-  const fetchSubjects = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('subjects')
-      .select('*')
-      .eq('user_id', user.id as any);
-    
-    if (error) {
-      console.error("Error fetching subjects:", error);
-      toast.error("Failed to load subjects");
-      return;
-    }
-    
-    if (!data) {
-      console.error("No data returned from subjects query");
-      return;
-    }
-    
-    // Transform the data to match the Subject type
-    const transformedSubjects: Subject[] = data.map((subject: any) => ({
-      id: subject.id,
-      name: subject.name,
-      color: subject.color,
-      totalSessions: 0, // We'll update this with session counts later
-      completedSessions: 0,
-      skippedSessions: 0,
-      userId: subject.user_id
-    }));
-    
-    setSubjects(transformedSubjects);
-  };
-
-  // Fetch sessions from Supabase
-  const fetchSessions = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('user_id', user.id as any);
-    
-    if (error) {
-      console.error("Error fetching sessions:", error);
-      toast.error("Failed to load sessions");
-      return;
-    }
-    
-    if (!data) {
-      console.error("No data returned from sessions query");
-      return;
-    }
-    
-    // Transform the data to match the Session type
-    const transformedSessions: Session[] = data.map((session: any) => ({
-      id: session.id,
-      title: session.title,
-      description: session.description || "",
-      duration: session.duration,
-      status: session.status as "pending" | "completed" | "skipped",
-      date: session.date,
-      subjectId: session.subject_id
-    }));
-    
-    setSessions(transformedSessions);
-  };
-
   // Update summary whenever subjects or sessions change
   useEffect(() => {
     if (subjects.length === 0 && sessions.length === 0) {
@@ -143,22 +79,6 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Update subject statistics based on sessions
-    const updatedSubjects = subjects.map(subject => {
-      const subjectSessions = sessions.filter(session => session.subjectId === subject.id);
-      const completedSessions = subjectSessions.filter(session => session.status === "completed").length;
-      const skippedSessions = subjectSessions.filter(session => session.status === "skipped").length;
-      
-      return {
-        ...subject,
-        totalSessions: subjectSessions.length,
-        completedSessions,
-        skippedSessions
-      };
-    });
-    
-    setSubjects(updatedSubjects);
-
     const completedSessions = sessions.filter(session => session.status === "completed");
     const skippedSessions = sessions.filter(session => session.status === "skipped");
     const pendingSessions = sessions.filter(session => session.status === "pending");
@@ -167,6 +87,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     const studyTimeCompleted = completedSessions.reduce((total, session) => total + session.duration, 0);
     
     // Calculate streak
+    // This is simplified - a real streak calculation would be more complex
     const streak = calculateStreak(completedSessions);
 
     setSummary({
@@ -179,6 +100,19 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       streak,
     });
   }, [subjects, sessions]);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`study-flow-subjects-${user.id}`, JSON.stringify(subjects));
+    }
+  }, [subjects, user]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`study-flow-sessions-${user.id}`, JSON.stringify(sessions));
+    }
+  }, [sessions, user]);
 
   // Helper function to calculate streak
   const calculateStreak = (completedSessions: Session[]) => {
@@ -229,187 +163,150 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     return streak;
   };
 
-  const addSubject = async (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
+  const addSubject = (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
     if (!user) {
       toast.error("You must be logged in to add a subject");
       return;
     }
     
-    try {
-      const insertData = {
-        name: subject.name,
-        color: subject.color,
-        user_id: user.id
-      };
-      
-      // Use type assertion to bypass TypeScript error
-      const { data, error } = await supabase
-        .from('subjects')
-        .insert(insertData as any)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      if (!data) {
-        throw new Error("No data returned after insert");
-      }
-      
-      const newSubject: Subject = {
-        id: data.id,
-        name: data.name,
-        color: data.color,
-        userId: data.user_id,
-        totalSessions: 0,
-        completedSessions: 0,
-        skippedSessions: 0
-      };
-      
-      setSubjects(prev => [...prev, newSubject]);
-      toast.success(`Added new subject: ${subject.name}`);
-    } catch (error: any) {
-      console.error("Error adding subject:", error);
-      toast.error(`Failed to add subject: ${error.message}`);
-    }
+    const newSubject: Subject = {
+      id: `subject_${Date.now()}`,
+      userId: user.id,
+      totalSessions: 0,
+      completedSessions: 0,
+      skippedSessions: 0,
+      ...subject,
+    };
+    
+    setSubjects(prev => [...prev, newSubject]);
+    toast.success(`Added new subject: ${subject.name}`);
   };
 
-  const updateSubject = async (id: string, subjectUpdate: Partial<Subject>) => {
-    try {
-      const updateData: any = {};
-      
-      if (subjectUpdate.name) updateData.name = subjectUpdate.name;
-      if (subjectUpdate.color) updateData.color = subjectUpdate.color;
-      
-      const { error } = await supabase
-        .from('subjects')
-        .update(updateData as any)
-        .eq('id', id as any);
-      
-      if (error) throw error;
-      
-      setSubjects(prev =>
-        prev.map(subject =>
-          subject.id === id ? { ...subject, ...subjectUpdate } : subject
-        )
-      );
-      
-      toast.success("Subject updated");
-    } catch (error: any) {
-      console.error("Error updating subject:", error);
-      toast.error(`Failed to update subject: ${error.message}`);
-    }
+  const updateSubject = (id: string, subjectUpdate: Partial<Subject>) => {
+    setSubjects(prev =>
+      prev.map(subject =>
+        subject.id === id ? { ...subject, ...subjectUpdate } : subject
+      )
+    );
+    toast.success("Subject updated");
   };
 
-  const deleteSubject = async (id: string) => {
-    try {
-      // Delete the subject (cascade will handle sessions)
-      const { error } = await supabase
-        .from('subjects')
-        .delete()
-        .eq('id', id as any);
-      
-      if (error) throw error;
-      
-      // Update state
-      setSubjects(prev => prev.filter(subject => subject.id !== id));
-      setSessions(prev => prev.filter(session => session.subjectId !== id));
-      
-      toast.success("Subject and its sessions deleted");
-    } catch (error: any) {
-      console.error("Error deleting subject:", error);
-      toast.error(`Failed to delete subject: ${error.message}`);
-    }
+  const deleteSubject = (id: string) => {
+    // Delete the subject
+    setSubjects(prev => prev.filter(subject => subject.id !== id));
+    
+    // Also delete all sessions for this subject
+    setSessions(prev => prev.filter(session => session.subjectId !== id));
+    
+    toast.success("Subject and its sessions deleted");
   };
 
-  const addSession = async (session: Omit<Session, "id">) => {
+  const addSession = (session: Omit<Session, "id">) => {
     if (!user) {
       toast.error("You must be logged in to add a session");
       return;
     }
     
-    try {
-      const insertData = {
-        title: session.title,
-        description: session.description,
-        duration: session.duration,
-        date: session.date,
-        status: session.status,
-        subject_id: session.subjectId,
-        user_id: user.id
-      };
-      
-      // Use type assertion to bypass TypeScript error
-      const { data, error } = await supabase
-        .from('sessions')
-        .insert(insertData as any)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      if (!data) {
-        throw new Error("No data returned after insert");
-      }
-      
-      const newSession: Session = {
-        id: data.id,
-        title: data.title,
-        description: data.description || "",
-        duration: data.duration,
-        status: data.status as "pending" | "completed" | "skipped",
-        date: data.date,
-        subjectId: data.subject_id
-      };
-      
-      setSessions(prev => [...prev, newSession]);
-      
-      toast.success(`Added new session: ${session.title}`);
-    } catch (error: any) {
-      console.error("Error adding session:", error);
-      toast.error(`Failed to add session: ${error.message}`);
-    }
+    const newSession: Session = {
+      id: `session_${Date.now()}`,
+      ...session,
+    };
+    
+    setSessions(prev => [...prev, newSession]);
+    
+    // Update the subject's total sessions count
+    setSubjects(prev =>
+      prev.map(subject =>
+        subject.id === session.subjectId
+          ? { ...subject, totalSessions: subject.totalSessions + 1 }
+          : subject
+      )
+    );
+    
+    toast.success(`Added new session: ${session.title}`);
   };
 
-  const updateSessionStatus = async (id: string, status: "pending" | "completed" | "skipped") => {
-    try {
-      const { error } = await supabase
-        .from('sessions')
-        .update({ status } as any)
-        .eq('id', id as any);
-      
-      if (error) throw error;
-      
-      // Update the session in state
-      setSessions(prev =>
-        prev.map(session =>
-          session.id === id ? { ...session, status } : session
-        )
+  const updateSessionStatus = (id: string, status: "pending" | "completed" | "skipped") => {
+    // Find the session to update
+    const sessionToUpdate = sessions.find(session => session.id === id);
+    if (!sessionToUpdate) {
+      toast.error("Session not found");
+      return;
+    }
+    
+    // Get the old status to update subject counts correctly
+    const oldStatus = sessionToUpdate.status;
+    
+    // Update the session
+    setSessions(prev =>
+      prev.map(session =>
+        session.id === id ? { ...session, status } : session
+      )
+    );
+    
+    // Update the subject's completed/skipped session counts
+    if (oldStatus !== status) {
+      setSubjects(prev =>
+        prev.map(subject => {
+          if (subject.id === sessionToUpdate.subjectId) {
+            let completedSessions = subject.completedSessions;
+            let skippedSessions = subject.skippedSessions;
+            
+            // Remove counts from old status
+            if (oldStatus === "completed") completedSessions -= 1;
+            if (oldStatus === "skipped") skippedSessions -= 1;
+            
+            // Add counts to new status
+            if (status === "completed") completedSessions += 1;
+            if (status === "skipped") skippedSessions += 1;
+            
+            return {
+              ...subject,
+              completedSessions,
+              skippedSessions,
+            };
+          }
+          return subject;
+        })
       );
-      
-      toast.success(`Session marked as ${status}`);
-    } catch (error: any) {
-      console.error("Error updating session status:", error);
-      toast.error(`Failed to update session: ${error.message}`);
     }
+    
+    toast.success(`Session marked as ${status}`);
   };
 
-  const deleteSession = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('sessions')
-        .delete()
-        .eq('id', id as any);
-      
-      if (error) throw error;
-      
-      // Update state
-      setSessions(prev => prev.filter(session => session.id !== id));
-      
-      toast.success("Session deleted");
-    } catch (error: any) {
-      console.error("Error deleting session:", error);
-      toast.error(`Failed to delete session: ${error.message}`);
+  const deleteSession = (id: string) => {
+    // Find the session to delete
+    const sessionToDelete = sessions.find(session => session.id === id);
+    if (!sessionToDelete) {
+      toast.error("Session not found");
+      return;
     }
+    
+    // Delete the session
+    setSessions(prev => prev.filter(session => session.id !== id));
+    
+    // Update the subject's total sessions count and completed/skipped counts
+    setSubjects(prev =>
+      prev.map(subject => {
+        if (subject.id === sessionToDelete.subjectId) {
+          let completedSessions = subject.completedSessions;
+          let skippedSessions = subject.skippedSessions;
+          
+          if (sessionToDelete.status === "completed") completedSessions -= 1;
+          if (sessionToDelete.status === "skipped") skippedSessions -= 1;
+          
+          return {
+            ...subject,
+            totalSessions: subject.totalSessions - 1,
+            completedSessions,
+            skippedSessions,
+          };
+        }
+        return subject;
+      })
+    );
+    
+    toast.success("Session deleted");
   };
 
   return (

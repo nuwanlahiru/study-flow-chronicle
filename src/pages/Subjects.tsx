@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
-import { Plus, Trash, Pencil } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useStudy } from "@/contexts/StudyContext";
 import SubjectCard from "@/components/subjects/SubjectCard";
 import SubjectForm from "@/components/subjects/SubjectForm";
@@ -58,7 +58,6 @@ const Subjects = () => {
     } else {
       addSubject(subjectData);
     }
-    setIsFormOpen(false);
   };
 
   const handleDeleteConfirm = (id: string) => {
@@ -94,66 +93,12 @@ const Subjects = () => {
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {subjects.map(subject => (
-            <div key={subject.id} className="border rounded-lg p-6 shadow-sm bg-card">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center">
-                  <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: subject.color }}></div>
-                  <h3 className="font-semibold">{subject.name}</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleEditSubject(subject)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleDeleteConfirm(subject.id)}
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Progress</span>
-                  <span>
-                    {subject.completedSessions}/{subject.totalSessions} sessions
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-studypurple-500 rounded-full" 
-                    style={{ 
-                      width: subject.totalSessions > 0 
-                        ? `${(subject.completedSessions / subject.totalSessions) * 100}%` 
-                        : '0%' 
-                    }}
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-                <div className="p-2 bg-studypurple-50 rounded-lg">
-                  <p className="font-semibold text-studypurple-700">{subject.totalSessions}</p>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                </div>
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <p className="font-semibold text-green-700">{subject.completedSessions}</p>
-                  <p className="text-xs text-muted-foreground">Completed</p>
-                </div>
-                <div className="p-2 bg-destructive/10 rounded-lg">
-                  <p className="font-semibold text-destructive">{subject.skippedSessions}</p>
-                  <p className="text-xs text-muted-foreground">Skipped</p>
-                </div>
-              </div>
-            </div>
+            <SubjectCard
+              key={subject.id}
+              subject={subject}
+              onEdit={handleEditSubject}
+              onDelete={handleDeleteConfirm}
+            />
           ))}
         </div>
       )}

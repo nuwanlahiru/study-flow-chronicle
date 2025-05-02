@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -13,9 +13,6 @@ import {
   Check,
   SkipForward,
   X,
-  Trash2,
-  Edit,
-  MoreVertical
 } from "lucide-react";
 import { useStudy } from "@/contexts/StudyContext";
 import SessionCard from "@/components/sessions/SessionCard";
@@ -77,7 +74,7 @@ const Sessions = () => {
   }
 
   // Open form with initialSubjectId (from URL params)
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialSubjectId) {
       setIsFormOpen(true);
     }
@@ -93,12 +90,11 @@ const Sessions = () => {
     setIsFormOpen(true);
   };
 
-  const handleSaveSession = (sessionData: Omit<Session, "id">) => {
+  const handleSaveSession = (sessionData: Omit<Session, "id" | "status">) => {
     if (currentSession) {
-      // For editing, preserve the existing status
-      updateSessionStatus(currentSession.id, sessionData.status);
+      // For editing, we need to preserve the status
+      updateSessionStatus(currentSession.id, sessionData.status || currentSession.status);
     } else {
-      // For new sessions, use the provided status
       addSession(sessionData);
     }
     
@@ -142,10 +138,6 @@ const Sessions = () => {
   // Find subject for each session
   const getSubjectForSession = (subjectId: string) => {
     return subjects.find(subject => subject.id === subjectId);
-  };
-
-  const changeSessionStatus = (session: Session, newStatus: "pending" | "completed" | "skipped") => {
-    updateSessionStatus(session.id, newStatus);
   };
 
   return (
@@ -202,7 +194,7 @@ const Sessions = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
+        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6">
           <TabsTrigger value="all" className="flex items-center">
             <Calendar className="h-4 w-4 mr-2" />
             All
@@ -215,10 +207,6 @@ const Sessions = () => {
             <CalendarCheck className="h-4 w-4 mr-2" />
             Completed
           </TabsTrigger>
-          <TabsTrigger value="skipped" className="flex items-center">
-            <CalendarX className="h-4 w-4 mr-2" />
-            Skipped
-          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="all">
@@ -230,10 +218,6 @@ const Sessions = () => {
         </TabsContent>
         
         <TabsContent value="completed">
-          {renderSessionsList(sortedSessions)}
-        </TabsContent>
-
-        <TabsContent value="skipped">
           {renderSessionsList(sortedSessions)}
         </TabsContent>
       </Tabs>
@@ -289,139 +273,14 @@ const Sessions = () => {
     return (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         {sessionsToRender.map(session => (
-          <div key={session.id} className="border rounded-lg shadow-sm bg-card overflow-hidden flex flex-col">
-            <div className="p-4">
-              <div 
-                className="w-full h-1 rounded mb-4" 
-                style={{ backgroundColor: getSubjectForSession(session.subjectId)?.color || "#ddd" }}
-              />
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">{session.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {getSubjectForSession(session.subjectId)?.name}
-                  </p>
-                </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => handleEditSession(session)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                    <DropdownMenuItem 
-                      onClick={() => changeSessionStatus(session, "pending")} 
-                      disabled={session.status === "pending"}
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      Mark as Pending
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => changeSessionStatus(session, "completed")}
-                      disabled={session.status === "completed"}
-                    >
-                      <CalendarCheck className="mr-2 h-4 w-4" />
-                      Mark as Completed
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => changeSessionStatus(session, "skipped")}
-                      disabled={session.status === "skipped"}
-                    >
-                      <CalendarX className="mr-2 h-4 w-4" />
-                      Mark as Skipped
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => handleDeleteConfirm(session.id)}
-                      className="text-destructive focus:bg-destructive focus:text-destructive-foreground"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              
-              {session.description && (
-                <p className="text-sm mt-2">{session.description}</p>
-              )}
-              
-              <div className="flex items-center gap-4 mt-4">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock className="mr-1 h-4 w-4" />
-                  {session.duration} min
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Calendar className="mr-1 h-4 w-4" />
-                  {new Date(session.date).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-auto">
-              <div className={`px-4 py-3 text-sm font-medium flex justify-between items-center ${
-                session.status === 'completed' 
-                  ? 'bg-studypurple-100 text-studypurple-700' 
-                  : session.status === 'skipped' 
-                  ? 'bg-destructive/10 text-destructive' 
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                <div className="flex items-center">
-                  {session.status === 'completed' && (
-                    <Check className="mr-2 h-4 w-4" />
-                  )}
-                  {session.status === 'skipped' && (
-                    <X className="mr-2 h-4 w-4" />
-                  )}
-                  {session.status === 'pending' && (
-                    <Clock className="mr-2 h-4 w-4" />
-                  )}
-                  Status: {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                </div>
-                
-                <div className="flex gap-1">
-                  {session.status !== 'completed' && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7 px-2 text-studypurple-700 hover:bg-studypurple-200"
-                      onClick={() => changeSessionStatus(session, "completed")}
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
-                  )}
-                  {session.status !== 'skipped' && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7 px-2 text-destructive hover:bg-destructive/20"
-                      onClick={() => changeSessionStatus(session, "skipped")}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                  {session.status !== 'pending' && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7 px-2 text-muted-foreground hover:bg-muted"
-                      onClick={() => changeSessionStatus(session, "pending")}
-                    >
-                      <Clock className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <SessionCard
+            key={session.id}
+            session={session}
+            subject={getSubjectForSession(session.subjectId)}
+            onStatusChange={updateSessionStatus}
+            onEdit={handleEditSession}
+            onDelete={handleDeleteConfirm}
+          />
         ))}
       </div>
     );

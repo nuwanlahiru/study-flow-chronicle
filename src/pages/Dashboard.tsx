@@ -7,7 +7,6 @@ import SummaryCard from "@/components/dashboard/SummaryCard";
 import RecentSessions from "@/components/dashboard/RecentSessions";
 import ProgressChart from "@/components/dashboard/ProgressChart";
 import SubjectSessionChart from "@/components/dashboard/SubjectSessionChart";
-import SessionStatusGrid from "@/components/dashboard/SessionStatusGrid";
 import PomodoroTimer from "@/components/dashboard/PomodoroTimer";
 import SubjectMiniSummary from "@/components/dashboard/SubjectMiniSummary";
 import { useStudy } from "@/contexts/StudyContext";
@@ -49,6 +48,13 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex space-x-2">
+          <Link to="/subjects">
+            <Button className="gradient-bg">
+              <Plus className="mr-2 h-4 w-4" /> Add Subject
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {subjects.length === 0 ? (
@@ -70,9 +76,6 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Session Status Grid - Added at the top */}
-          <SessionStatusGrid />
-
           <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             <SummaryCard
               title="Total Study Time"
@@ -90,14 +93,12 @@ const Dashboard = () => {
               icon={<Book className="h-4 w-4" />}
             />
             <SummaryCard
-              title="Total Sessions"
-              value={summary.totalSessions}
+              title="Completion Rate"
+              value={`${Math.round((summary.completedSessions / summary.totalSessions) * 100) || 0}%`}
+              progress={(summary.completedSessions / summary.totalSessions) * 100 || 0}
               icon={<Calendar className="h-4 w-4" />}
             />
           </div>
-
-          {/* Subject Session Chart */}
-          <SubjectSessionChart />
 
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="md:col-span-1">
@@ -117,6 +118,8 @@ const Dashboard = () => {
               <PomodoroTimer />
             </div>
           </div>
+
+          <SubjectSessionChart />
 
           <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
             <RecentSessions />
