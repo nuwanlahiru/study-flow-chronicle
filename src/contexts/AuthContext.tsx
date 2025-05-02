@@ -38,18 +38,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (type === "google") {
         // In a real app, this would be replaced with actual Google Auth
-        // For now, we'll simulate a Google user
+        // For now, we'll simulate a Google user login
         mockUser = {
           id: "google-user-123",
           name: "Google User",
           email: "google@example.com",
           photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=google"
         };
+        
+        // Simulate Google login popup
+        // In a real implementation, we'd use something like Firebase Auth or Supabase Auth
+        const confirmLogin = window.confirm("This would open a Google login popup in a real app. Proceed with mock Google login?");
+        
+        if (!confirmLogin) {
+          setLoading(false);
+          return;
+        }
+        
         toast.success("Successfully logged in with Google!");
       } else {
         // Demo user
         mockUser = {
-          id: "user123",
+          id: "demo-user-123",
           name: "Demo User",
           email: "demo@example.com",
           photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo"
@@ -71,7 +81,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       setLoading(true);
-      // Mock logout for now - will be replaced with Firebase auth logout
       setUser(null);
       localStorage.removeItem("study-flow-user");
       toast.info("You have been logged out");

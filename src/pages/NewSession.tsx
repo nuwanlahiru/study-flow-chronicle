@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -20,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { toast } from "react-toastify";
 
 const NewSession = () => {
   const { user } = useAuth();
@@ -54,22 +54,38 @@ const NewSession = () => {
     }
   }, [loading, subjects, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    if (title.trim() === "" || !subjectId || !date) {
+
+    // Form validation
+    if (!title.trim()) {
+      toast.error("Please enter a session title");
       return;
     }
-    
+
+    if (!subjectId) {
+      toast.error("Please select a subject");
+      return;
+    }
+
+    if (duration <= 0) {
+      toast.error("Duration must be greater than 0");
+      return;
+    }
+
+    // Create new session
     addSession({
       title,
-      description: description.trim() || undefined,
+      description,
       subjectId,
       duration,
-      date: date.toISOString(),
+      date,
+      status: "pending" // Add status field here
     });
-    
+
+    // Navigate back to sessions page
     navigate("/sessions");
+    toast.success("New session added!");
   };
 
   if (loading) {

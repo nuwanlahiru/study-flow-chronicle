@@ -23,7 +23,7 @@ const Footer = () => {
               href="https://ScrollLoop.com" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="hover:underline"
+              className="hover:underline ml-1"
             >
               ScrollLoop.com
             </a>
