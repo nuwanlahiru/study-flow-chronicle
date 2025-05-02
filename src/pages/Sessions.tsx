@@ -1,317 +1,290 @@
 
-import React, { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+  Plus,
+  Calendar,
+  Clock,
+  CalendarCheck,
+  CalendarX,
+  Filter,
+  Check,
+  SkipForward,
+  X,
+} from "lucide-react";
 import { useStudy } from "@/contexts/StudyContext";
+import SessionCard from "@/components/sessions/SessionCard";
+import SessionForm from "@/components/sessions/SessionForm";
 import { Session } from "@/types";
-import { toast } from "@/components/ui/sonner";
-import { Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 const Sessions = () => {
-  const { subjects, sessions, addSession, updateSession, updateSessionStatus, deleteSession } = useStudy();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [duration, setDuration] = useState<number>(30);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [filter, setFilter] = useState<"pending" | "completed" | "skipped" | "all">("all");
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { subjects, sessions, addSession, updateSessionStatus, deleteSession, loading } = useStudy();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const initialSubjectId = searchParams.get("subjectId") || undefined;
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [currentSession, setCurrentSession] = useState<Session | undefined>(undefined);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [filterSubject, setFilterSubject] = useState<string | "all">("all");
+  const [activeTab, setActiveTab] = useState("all");
+  
+  // If not logged in, redirect to login
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
 
-  useEffect(() => {
-    if (editingSessionId) {
-      const sessionToEdit = sessions.find((session) => session.id === editingSessionId);
-      if (sessionToEdit) {
-        setTitle(sessionToEdit.title);
-        setDescription(sessionToEdit.description || "");
-        setSubjectId(sessionToEdit.subjectId);
-        setDuration(sessionToEdit.duration);
-        setDate(new Date(sessionToEdit.date));
-      }
-    } else {
-      // Reset form fields when not editing
-      setTitle("");
-      setDescription("");
-      setSubjectId("");
-      setDuration(30);
-      setDate(new Date());
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <p className="text-lg font-medium">Loading sessions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Open form with initialSubjectId (from URL params)
+  React.useEffect(() => {
+    if (initialSubjectId) {
+      setIsFormOpen(true);
     }
-  }, [editingSessionId, sessions]);
+  }, [initialSubjectId]);
 
-  const filteredSessions =
-    filter === "all"
-      ? sessions
-      : sessions.filter((session) => session.status === filter);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!title.trim()) {
-      toast.error("Please enter a session title");
-      return;
-    }
-
-    if (!subjectId) {
-      toast.error("Please select a subject");
-      return;
-    }
-
-    if (duration <= 0) {
-      toast.error("Duration must be greater than 0");
-      return;
-    }
-
-    const newSession = {
-      title,
-      description,
-      subjectId,
-      duration,
-      date: date?.toISOString() || new Date().toISOString(),
-      status: "pending" as "pending" | "completed" | "skipped", // Fix the type with explicit cast
-    };
-
-    if (editingSessionId) {
-      editSession(newSession);
-    } else {
-      addSession(newSession);
-    }
-
-    setTitle("");
-    setDescription("");
-    setSubjectId("");
-    setDuration(30);
-    setDate(new Date());
-    setEditingSessionId(null);
+  const handleAddSession = () => {
+    setCurrentSession(undefined);
+    setIsFormOpen(true);
   };
 
-  const editSession = (session: Omit<Session, "id">) => {
-    if (editingSessionId) {
-      updateSession(editingSessionId, session);
-      setEditingSessionId(null);
-      toast.success("Session updated");
+  const handleEditSession = (session: Session) => {
+    setCurrentSession(session);
+    setIsFormOpen(true);
+  };
+
+  const handleSaveSession = (sessionData: Omit<Session, "id" | "status">) => {
+    if (currentSession) {
+      // For editing, we need to preserve the status
+      updateSessionStatus(currentSession.id, sessionData.status || currentSession.status);
+    } else {
+      addSession(sessionData);
+    }
+    
+    // If we came from a URL with a subjectId, clear it
+    if (initialSubjectId) {
+      navigate("/sessions");
     }
   };
 
-  const handleDeleteSession = (id: string) => {
-    deleteSession(id);
+  const handleDeleteConfirm = (id: string) => {
+    setSessionToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (sessionToDelete) {
+      deleteSession(sessionToDelete);
+      setSessionToDelete(null);
+    }
+  };
+
+  // Filter sessions based on active tab and subject filter
+  const filteredSessions = sessions.filter(session => {
+    // Filter by status
+    if (activeTab !== "all" && session.status !== activeTab) {
+      return false;
+    }
+    
+    // Filter by subject
+    if (filterSubject !== "all" && session.subjectId !== filterSubject) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // Sort sessions by date (newest first)
+  const sortedSessions = [...filteredSessions].sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
+
+  // Find subject for each session
+  const getSubjectForSession = (subjectId: string) => {
+    return subjects.find(subject => subject.id === subjectId);
   };
 
   return (
-    <div className="container">
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Sessions</CardTitle>
-          <CardDescription>
-            Add, edit, and manage your study sessions.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  type="text"
-                  id="title"
-                  placeholder="Session Title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="subject">Subject</Label>
-                <Select value={subjectId} onValueChange={setSubjectId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects.map((subject) => (
-                      <SelectItem key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="duration">Duration (minutes)</Label>
-                <Input
-                  type="number"
-                  id="duration"
-                  placeholder="30"
-                  value={duration.toString()}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <Label>Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
-                    >
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="center" side="bottom">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      disabled={(date) =>
-                        date > new Date()
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Session Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <Button type="submit">{editingSessionId ? "Update Session" : "Add Session"}</Button>
-            {editingSessionId && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setEditingSessionId(null)}
-              >
-                Cancel Edit
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
+        <div className="flex space-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" /> Filter
               </Button>
-            )}
-          </form>
-        </CardContent>
-      </Card>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Filter by Subject</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem 
+                  onClick={() => setFilterSubject("all")}
+                  className="flex items-center justify-between"
+                >
+                  All Subjects
+                  {filterSubject === "all" && <Check className="h-4 w-4" />}
+                </DropdownMenuItem>
+                {subjects.map(subject => (
+                  <DropdownMenuItem 
+                    key={subject.id}
+                    onClick={() => setFilterSubject(subject.id)}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: subject.color }}
+                      />
+                      <span>{subject.name}</span>
+                    </div>
+                    {filterSubject === subject.id && <Check className="h-4 w-4" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Button onClick={handleAddSession} className="gradient-bg">
+            <Plus className="mr-2 h-4 w-4" /> Add Session
+          </Button>
+        </div>
+      </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Session List</CardTitle>
-          <CardDescription>View and manage existing sessions.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <Label>Filter Sessions</Label>
-            <Select 
-              value={filter} 
-              onValueChange={(value: "pending" | "completed" | "skipped" | "all") => setFilter(value)}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="skipped">Skipped</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSessions.map((session) => {
-                  const subject = subjects.find((s) => s.id === session.subjectId);
-                  return (
-                    <TableRow key={session.id}>
-                      <TableCell>{session.title}</TableCell>
-                      <TableCell>{subject?.name || "N/A"}</TableCell>
-                      <TableCell>{format(new Date(session.date), "PPP")}</TableCell>
-                      <TableCell>{session.duration} minutes</TableCell>
-                      <TableCell>
-                        <Select
-                          value={session.status}
-                          onValueChange={(status: "pending" | "completed" | "skipped") =>
-                            updateSessionStatus(session.id, status)
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="skipped">Skipped</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingSessionId(session.id)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => handleDeleteSession(session.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs 
+        defaultValue="all" 
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6">
+          <TabsTrigger value="all" className="flex items-center">
+            <Calendar className="h-4 w-4 mr-2" />
+            All
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="flex items-center">
+            <Clock className="h-4 w-4 mr-2" />
+            Pending
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center">
+            <CalendarCheck className="h-4 w-4 mr-2" />
+            Completed
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all">
+          {renderSessionsList(sortedSessions)}
+        </TabsContent>
+        
+        <TabsContent value="pending">
+          {renderSessionsList(sortedSessions)}
+        </TabsContent>
+        
+        <TabsContent value="completed">
+          {renderSessionsList(sortedSessions)}
+        </TabsContent>
+      </Tabs>
+
+      <SessionForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSave={handleSaveSession}
+        subjects={subjects}
+        editSession={currentSession}
+        initialSubjectId={initialSubjectId}
+      />
+
+      <AlertDialog open={!!sessionToDelete} onOpenChange={() => setSessionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete the session. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+
+  // Helper function to render sessions list
+  function renderSessionsList(sessionsToRender: Session[]) {
+    if (sessionsToRender.length === 0) {
+      return (
+        <div className="border rounded-lg p-8 text-center">
+          <h2 className="text-lg font-semibold">No Sessions Found</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {subjects.length === 0
+              ? "Create subjects first before adding sessions"
+              : "Create a new session to track your study progress"}
+          </p>
+          <Button 
+            onClick={handleAddSession} 
+            className="mt-4 gradient-bg"
+            disabled={subjects.length === 0}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Session
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {sessionsToRender.map(session => (
+          <SessionCard
+            key={session.id}
+            session={session}
+            subject={getSubjectForSession(session.subjectId)}
+            onStatusChange={updateSessionStatus}
+            onEdit={handleEditSession}
+            onDelete={handleDeleteConfirm}
+          />
+        ))}
+      </div>
+    );
+  }
 };
 
 export default Sessions;

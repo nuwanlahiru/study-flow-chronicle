@@ -20,7 +20,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { toast } from "@/components/ui/sonner";
 
 const NewSession = () => {
   const { user } = useAuth();
@@ -55,38 +54,22 @@ const NewSession = () => {
     }
   }, [loading, subjects, navigate]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Form validation
-    if (!title.trim()) {
-      toast.error("Please enter a session title");
+    
+    if (title.trim() === "" || !subjectId || !date) {
       return;
     }
-
-    if (!subjectId) {
-      toast.error("Please select a subject");
-      return;
-    }
-
-    if (duration <= 0) {
-      toast.error("Duration must be greater than 0");
-      return;
-    }
-
-    // Create new session
+    
     addSession({
       title,
-      description,
+      description: description.trim() || undefined,
       subjectId,
       duration,
       date: date.toISOString(),
-      status: "pending" as "pending" | "completed" | "skipped" // Fix type error with explicit cast
     });
-
-    // Navigate back to sessions page
+    
     navigate("/sessions");
-    toast.success("New session added!");
   };
 
   if (loading) {
