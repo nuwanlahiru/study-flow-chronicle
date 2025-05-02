@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -37,7 +38,7 @@ import { toast } from "@/components/ui/sonner";
 import { Trash2 } from "lucide-react";
 
 const Sessions = () => {
-  const { subjects, sessions, addSession, updateSessionStatus, deleteSession } = useStudy();
+  const { subjects, sessions, addSession, updateSession, updateSessionStatus, deleteSession } = useStudy();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -45,7 +46,6 @@ const Sessions = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [filter, setFilter] = useState<"pending" | "completed" | "skipped" | "all">("all");
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const { updateSession } = useStudy();
 
   useEffect(() => {
     if (editingSessionId) {
@@ -96,11 +96,11 @@ const Sessions = () => {
       subjectId,
       duration,
       date: date?.toISOString() || new Date().toISOString(),
-      status: "pending", // Default status
+      status: "pending" as "pending" | "completed" | "skipped", // Fix the type with explicit cast
     };
 
     if (editingSessionId) {
-      editSession({ ...newSession, status: "pending" });
+      editSession(newSession);
     } else {
       addSession(newSession);
     }
@@ -115,10 +115,7 @@ const Sessions = () => {
 
   const editSession = (session: Omit<Session, "id">) => {
     if (editingSessionId) {
-      updateSession(editingSessionId, {
-        ...session,
-        status: session.status || "pending" // Ensure status is included
-      });
+      updateSession(editingSessionId, session);
       setEditingSessionId(null);
       toast.success("Session updated");
     }
@@ -236,7 +233,10 @@ const Sessions = () => {
         <CardContent>
           <div className="mb-4">
             <Label>Filter Sessions</Label>
-            <Select value={filter} onValueChange={setFilter}>
+            <Select 
+              value={filter} 
+              onValueChange={(value: "pending" | "completed" | "skipped" | "all") => setFilter(value)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="All" />
               </SelectTrigger>

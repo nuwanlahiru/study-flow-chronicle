@@ -11,6 +11,7 @@ interface StudyContextType {
   updateSubject: (id: string, subject: Partial<Subject>) => void;
   deleteSubject: (id: string) => void;
   addSession: (session: Omit<Session, "id">) => void;
+  updateSession: (id: string, session: Partial<Session>) => void;
   updateSessionStatus: (id: string, status: "pending" | "completed" | "skipped") => void;
   deleteSession: (id: string) => void;
   loading: boolean;
@@ -226,6 +227,24 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     toast.success(`Added new session: ${session.title}`);
   };
 
+  const updateSession = (id: string, sessionUpdate: Partial<Session>) => {
+    // Find the session to update
+    const sessionToUpdate = sessions.find(session => session.id === id);
+    if (!sessionToUpdate) {
+      toast.error("Session not found");
+      return;
+    }
+    
+    // Update the session
+    setSessions(prev =>
+      prev.map(session =>
+        session.id === id ? { ...session, ...sessionUpdate } : session
+      )
+    );
+    
+    toast.success("Session updated");
+  };
+
   const updateSessionStatus = (id: string, status: "pending" | "completed" | "skipped") => {
     // Find the session to update
     const sessionToUpdate = sessions.find(session => session.id === id);
@@ -319,6 +338,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         updateSubject,
         deleteSubject,
         addSession,
+        updateSession,
         updateSessionStatus,
         deleteSession,
         loading,

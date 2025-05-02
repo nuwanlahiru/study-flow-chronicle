@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
@@ -19,7 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { toast } from "react-toastify";
+import { toast } from "@/components/ui/sonner";
 
 const NewSession = () => {
   const { user } = useAuth();
@@ -79,8 +80,8 @@ const NewSession = () => {
       description,
       subjectId,
       duration,
-      date,
-      status: "pending" // Add status field here
+      date: date.toISOString(),
+      status: "pending" as "pending" | "completed" | "skipped" // Fix type error with explicit cast
     });
 
     // Navigate back to sessions page
