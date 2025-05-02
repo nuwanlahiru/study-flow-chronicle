@@ -4,6 +4,7 @@ import { Subject, Session, StudySummary } from "@/types";
 import { useAuth } from "./AuthContext";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
 interface StudyContextType {
   subjects: Subject[];
@@ -74,8 +75,13 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     
+    if (!data) {
+      console.error("No data returned from subjects query");
+      return;
+    }
+    
     // Transform the data to match the Subject type
-    const transformedSubjects = data.map(subject => ({
+    const transformedSubjects: Subject[] = data.map(subject => ({
       id: subject.id,
       name: subject.name,
       color: subject.color,
@@ -103,8 +109,13 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     
+    if (!data) {
+      console.error("No data returned from sessions query");
+      return;
+    }
+    
     // Transform the data to match the Session type
-    const transformedSessions = data.map(session => ({
+    const transformedSessions: Session[] = data.map(session => ({
       id: session.id,
       title: session.title,
       description: session.description || "",
@@ -225,17 +236,26 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      // Define the type for the insert data
+      type SubjectInsert = Database['public']['Tables']['subjects']['Insert'];
+      
+      const insertData: SubjectInsert = {
+        name: subject.name,
+        color: subject.color,
+        user_id: user.id
+      };
+      
       const { data, error } = await supabase
         .from('subjects')
-        .insert({
-          name: subject.name,
-          color: subject.color,
-          user_id: user.id
-        })
+        .insert(insertData)
         .select('*')
         .single();
       
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("No data returned after insert");
+      }
       
       const newSubject: Subject = {
         id: data.id,
@@ -257,7 +277,9 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
 
   const updateSubject = async (id: string, subjectUpdate: Partial<Subject>) => {
     try {
-      const updateData: any = {};
+      // Define type for the update data
+      type SubjectUpdate = Database['public']['Tables']['subjects']['Update'];
+      const updateData: SubjectUpdate = {};
       
       if (subjectUpdate.name) updateData.name = subjectUpdate.name;
       if (subjectUpdate.color) updateData.color = subjectUpdate.color;
@@ -310,21 +332,30 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      // Define the type for the insert data
+      type SessionInsert = Database['public']['Tables']['sessions']['Insert'];
+      
+      const insertData: SessionInsert = {
+        title: session.title,
+        description: session.description,
+        duration: session.duration,
+        date: session.date,
+        status: session.status,
+        subject_id: session.subjectId,
+        user_id: user.id
+      };
+      
       const { data, error } = await supabase
         .from('sessions')
-        .insert({
-          title: session.title,
-          description: session.description,
-          duration: session.duration,
-          date: session.date,
-          status: session.status,
-          subject_id: session.subjectId,
-          user_id: user.id
-        })
+        .insert(insertData)
         .select('*')
         .single();
       
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error("No data returned after insert");
+      }
       
       const newSession: Session = {
         id: data.id,
