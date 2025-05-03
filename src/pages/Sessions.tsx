@@ -203,7 +203,7 @@ const Sessions = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-6">
+        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
           <TabsTrigger value="all" className="flex items-center">
             <Calendar className="h-4 w-4 mr-2" />
             All
@@ -216,6 +216,10 @@ const Sessions = () => {
             <CalendarCheck className="h-4 w-4 mr-2" />
             Completed
           </TabsTrigger>
+          <TabsTrigger value="skipped" className="flex items-center">
+            <CalendarX className="h-4 w-4 mr-2" />
+            Skipped
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="all">
@@ -227,6 +231,10 @@ const Sessions = () => {
         </TabsContent>
         
         <TabsContent value="completed">
+          {renderSessionsList(sortedSessions)}
+        </TabsContent>
+
+        <TabsContent value="skipped">
           {renderSessionsList(sortedSessions)}
         </TabsContent>
       </Tabs>

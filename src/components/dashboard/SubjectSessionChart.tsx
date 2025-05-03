@@ -2,10 +2,10 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudy } from "@/contexts/StudyContext";
-import { Check, Circle, Plus, X } from "lucide-react";
+import { Check, Circle, Plus, Trash2, X } from "lucide-react";
 
 const SubjectSessionChart = () => {
-  const { subjects, sessions, updateSessionStatus, addSession } = useStudy();
+  const { subjects, sessions, updateSessionStatus, addSession, deleteSession } = useStudy();
   
   // Group sessions by subject
   const sessionsBySubject = subjects.reduce((acc, subject) => {
@@ -30,6 +30,11 @@ const SubjectSessionChart = () => {
     } else {
       updateSessionStatus(session.id, "pending");
     }
+  };
+
+  // Handle session delete
+  const handleDeleteSession = (sessionId: string) => {
+    deleteSession(sessionId);
   };
   
   // Handle adding a new session
@@ -112,21 +117,33 @@ const SubjectSessionChart = () => {
                         <td key={`${subject.id}-session-${index}`} 
                             className="p-1 text-center">
                           {session ? (
-                            <div 
-                              onClick={() => handleSessionClick(session)}
-                              className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-                                session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
-                                session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
-                                'bg-muted text-muted-foreground hover:bg-muted/80'
-                              }`}
-                            >
-                              {session.status === "pending" ? (
-                                <Circle size={16} />
-                              ) : session.status === "completed" ? (
-                                <Check size={16} />
-                              ) : (
-                                <X size={16} />
-                              )}
+                            <div className="flex flex-col items-center">
+                              <div 
+                                onClick={() => handleSessionClick(session)}
+                                className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                                  session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
+                                  session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
+                                  'bg-muted text-muted-foreground hover:bg-muted/80'
+                                }`}
+                              >
+                                {session.status === "pending" ? (
+                                  <Circle size={16} />
+                                ) : session.status === "completed" ? (
+                                  <Check size={16} />
+                                ) : (
+                                  <X size={16} />
+                                )}
+                              </div>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSession(session.id);
+                                }}
+                                className="mt-1 text-muted-foreground hover:text-destructive cursor-pointer"
+                                title="Delete session"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             </div>
                           ) : (
                             <div className="w-8 h-8"></div>
