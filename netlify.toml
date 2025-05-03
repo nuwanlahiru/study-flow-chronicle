@@ -1,5 +1,5 @@
 [[redirects]]
-  from = "/*"
+  from = "https://uadecgtduzejunquvbir.supabase.co/auth/v1/callback"
   to = "https://cupcakes.scrollloop.com/#"
   status = 301
   force = true
