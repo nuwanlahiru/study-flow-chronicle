@@ -14,18 +14,20 @@ interface SummaryCardProps {
 
 const SummaryCard = ({ title, value, description, icon, progress }: SummaryCardProps) => {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+    <Card className="overflow-hidden hover:shadow-lg transition-all transform hover:scale-[1.02] duration-300">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 bg-gradient-to-r from-studypurple-500/10 to-blue-500/10">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="w-4 h-4 text-studypurple-400">{icon}</div>
+        <div className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm border border-white/50 flex items-center justify-center text-studypurple-500">
+          {icon}
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+        <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-studypurple-500 to-blue-500">{value}</div>
+        {description && <p className="text-xs text-gray-600 mt-1">{description}</p>}
         {progress !== undefined && (
           <div className="mt-3">
-            <Progress value={progress} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1">{Math.round(progress)}% completed</p>
+            <Progress value={progress} className="h-2 bg-studypurple-100/30" indicatorClassName="bg-gradient-to-r from-studypurple-500 to-blue-500" />
+            <p className="text-xs text-gray-600 mt-1">{Math.round(progress)}% completed</p>
           </div>
         )}
       </CardContent>
