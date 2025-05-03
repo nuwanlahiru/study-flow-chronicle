@@ -1,6 +1,8 @@
+
 import React, { createContext, useState, useEffect, useContext } from "react";
 import { Subject, Session, StudySummary } from "@/types";
 import { useAuth } from "./AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
 interface StudyContextType {
@@ -33,35 +35,46 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
 
-  // Load data from localStorage or eventually from Firebase
+  // Load data from Supabase when user changes
   useEffect(() => {
-    if (user) {
-      const loadData = () => {
-        try {
-          const storedSubjects = localStorage.getItem(`study-flow-subjects-${user.id}`);
-          const storedSessions = localStorage.getItem(`study-flow-sessions-${user.id}`);
-          
-          if (storedSubjects) {
-            setSubjects(JSON.parse(storedSubjects));
-          }
-          
-          if (storedSessions) {
-            setSessions(JSON.parse(storedSessions));
-          }
-        } catch (error) {
-          console.error("Error loading data:", error);
-          toast.error("Failed to load your study data");
-        } finally {
-          setLoading(false);
-        }
-      };
+    async function loadData() {
+      if (!user) {
+        setSubjects([]);
+        setSessions([]);
+        setLoading(false);
+        return;
+      }
       
-      loadData();
-    } else {
-      setSubjects([]);
-      setSessions([]);
-      setLoading(false);
+      try {
+        setLoading(true);
+        
+        // Fetch subjects
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('subjects')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (subjectsError) throw subjectsError;
+        
+        // Fetch sessions
+        const { data: sessionsData, error: sessionsError } = await supabase
+          .from('sessions')
+          .select('*')
+          .order('date', { ascending: false });
+        
+        if (sessionsError) throw sessionsError;
+        
+        setSubjects(subjectsData as Subject[]);
+        setSessions(sessionsData as Session[]);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast.error("Failed to load your study data");
+      } finally {
+        setLoading(false);
+      }
     }
+    
+    loadData();
   }, [user]);
 
   // Update summary whenever subjects or sessions change
@@ -87,7 +100,6 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     const studyTimeCompleted = completedSessions.reduce((total, session) => total + session.duration, 0);
     
     // Calculate streak
-    // This is simplified - a real streak calculation would be more complex
     const streak = calculateStreak(completedSessions);
 
     setSummary({
@@ -100,19 +112,6 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       streak,
     });
   }, [subjects, sessions]);
-
-  // Save data to localStorage whenever it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`study-flow-subjects-${user.id}`, JSON.stringify(subjects));
-    }
-  }, [subjects, user]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`study-flow-sessions-${user.id}`, JSON.stringify(sessions));
-    }
-  }, [sessions, user]);
 
   // Helper function to calculate streak
   const calculateStreak = (completedSessions: Session[]) => {
@@ -163,150 +162,293 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     return streak;
   };
 
-  const addSubject = (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
+  // CRUD operations for subjects
+  const addSubject = async (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
     if (!user) {
       toast.error("You must be logged in to add a subject");
       return;
     }
     
-    const newSubject: Subject = {
-      id: `subject_${Date.now()}`,
-      userId: user.id,
-      totalSessions: 0,
-      completedSessions: 0,
-      skippedSessions: 0,
-      ...subject,
-    };
-    
-    setSubjects(prev => [...prev, newSubject]);
-    toast.success(`Added new subject: ${subject.name}`);
+    try {
+      const newSubject = {
+        user_id: user.id,
+        name: subject.name,
+        color: subject.color,
+        total_sessions: 0,
+        completed_sessions: 0,
+        skipped_sessions: 0
+      };
+      
+      const { data, error } = await supabase
+        .from('subjects')
+        .insert(newSubject)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setSubjects(prev => [data as Subject, ...prev]);
+      toast.success(`Added new subject: ${subject.name}`);
+    } catch (error: any) {
+      console.error("Error adding subject:", error);
+      toast.error(error.message || "Failed to add subject");
+    }
   };
 
-  const updateSubject = (id: string, subjectUpdate: Partial<Subject>) => {
-    setSubjects(prev =>
-      prev.map(subject =>
-        subject.id === id ? { ...subject, ...subjectUpdate } : subject
-      )
-    );
-    toast.success("Subject updated");
+  const updateSubject = async (id: string, subjectUpdate: Partial<Subject>) => {
+    try {
+      const { error } = await supabase
+        .from('subjects')
+        .update(subjectUpdate)
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      setSubjects(prev =>
+        prev.map(subject =>
+          subject.id === id ? { ...subject, ...subjectUpdate } : subject
+        )
+      );
+      
+      toast.success("Subject updated");
+    } catch (error: any) {
+      console.error("Error updating subject:", error);
+      toast.error(error.message || "Failed to update subject");
+    }
   };
 
-  const deleteSubject = (id: string) => {
-    // Delete the subject
-    setSubjects(prev => prev.filter(subject => subject.id !== id));
-    
-    // Also delete all sessions for this subject
-    setSessions(prev => prev.filter(session => session.subjectId !== id));
-    
-    toast.success("Subject and its sessions deleted");
+  const deleteSubject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('subjects')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Sessions will be automatically deleted due to CASCADE constraint
+      setSubjects(prev => prev.filter(subject => subject.id !== id));
+      setSessions(prev => prev.filter(session => session.subjectId !== id));
+      
+      toast.success("Subject and its sessions deleted");
+    } catch (error: any) {
+      console.error("Error deleting subject:", error);
+      toast.error(error.message || "Failed to delete subject");
+    }
   };
 
-  const addSession = (session: Omit<Session, "id">) => {
+  // CRUD operations for sessions
+  const addSession = async (session: Omit<Session, "id">) => {
     if (!user) {
       toast.error("You must be logged in to add a session");
       return;
     }
     
-    const newSession: Session = {
-      id: `session_${Date.now()}`,
-      ...session,
-    };
-    
-    setSessions(prev => [...prev, newSession]);
-    
-    // Update the subject's total sessions count
-    setSubjects(prev =>
-      prev.map(subject =>
-        subject.id === session.subjectId
-          ? { ...subject, totalSessions: subject.totalSessions + 1 }
-          : subject
-      )
-    );
-    
-    toast.success(`Added new session: ${session.title}`);
-  };
-
-  const updateSessionStatus = (id: string, status: "pending" | "completed" | "skipped") => {
-    // Find the session to update
-    const sessionToUpdate = sessions.find(session => session.id === id);
-    if (!sessionToUpdate) {
-      toast.error("Session not found");
-      return;
-    }
-    
-    // Get the old status to update subject counts correctly
-    const oldStatus = sessionToUpdate.status;
-    
-    // Update the session
-    setSessions(prev =>
-      prev.map(session =>
-        session.id === id ? { ...session, status } : session
-      )
-    );
-    
-    // Update the subject's completed/skipped session counts
-    if (oldStatus !== status) {
-      setSubjects(prev =>
-        prev.map(subject => {
-          if (subject.id === sessionToUpdate.subjectId) {
-            let completedSessions = subject.completedSessions;
-            let skippedSessions = subject.skippedSessions;
-            
-            // Remove counts from old status
-            if (oldStatus === "completed") completedSessions -= 1;
-            if (oldStatus === "skipped") skippedSessions -= 1;
-            
-            // Add counts to new status
-            if (status === "completed") completedSessions += 1;
-            if (status === "skipped") skippedSessions += 1;
-            
-            return {
-              ...subject,
-              completedSessions,
-              skippedSessions,
-            };
-          }
-          return subject;
-        })
-      );
-    }
-    
-    toast.success(`Session marked as ${status}`);
-  };
-
-  const deleteSession = (id: string) => {
-    // Find the session to delete
-    const sessionToDelete = sessions.find(session => session.id === id);
-    if (!sessionToDelete) {
-      toast.error("Session not found");
-      return;
-    }
-    
-    // Delete the session
-    setSessions(prev => prev.filter(session => session.id !== id));
-    
-    // Update the subject's total sessions count and completed/skipped counts
-    setSubjects(prev =>
-      prev.map(subject => {
-        if (subject.id === sessionToDelete.subjectId) {
-          let completedSessions = subject.completedSessions;
-          let skippedSessions = subject.skippedSessions;
-          
-          if (sessionToDelete.status === "completed") completedSessions -= 1;
-          if (sessionToDelete.status === "skipped") skippedSessions -= 1;
-          
-          return {
-            ...subject,
-            totalSessions: subject.totalSessions - 1,
-            completedSessions,
-            skippedSessions,
-          };
+    try {
+      const newSession = {
+        user_id: user.id,
+        subject_id: session.subjectId,
+        title: session.title,
+        description: session.description || null,
+        duration: session.duration,
+        date: session.date,
+        status: session.status
+      };
+      
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert(newSession)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setSessions(prev => [data as Session, ...prev]);
+      
+      // Update the subject's total sessions count
+      const subjectToUpdate = subjects.find(s => s.id === session.subjectId);
+      if (subjectToUpdate) {
+        const update = {
+          total_sessions: subjectToUpdate.totalSessions + 1
+        };
+        
+        if (session.status === 'completed') {
+          update['completed_sessions'] = subjectToUpdate.completedSessions + 1;
+        } else if (session.status === 'skipped') {
+          update['skipped_sessions'] = subjectToUpdate.skippedSessions + 1;
         }
-        return subject;
-      })
-    );
-    
-    toast.success("Session deleted");
+        
+        await supabase
+          .from('subjects')
+          .update(update)
+          .eq('id', session.subjectId);
+          
+        setSubjects(prev =>
+          prev.map(subject =>
+            subject.id === session.subjectId
+              ? { 
+                  ...subject, 
+                  totalSessions: subject.totalSessions + 1,
+                  ...(session.status === 'completed' ? { completedSessions: subject.completedSessions + 1 } : {}),
+                  ...(session.status === 'skipped' ? { skippedSessions: subject.skippedSessions + 1 } : {})
+                }
+              : subject
+          )
+        );
+      }
+      
+      toast.success(`Added new session: ${session.title}`);
+    } catch (error: any) {
+      console.error("Error adding session:", error);
+      toast.error(error.message || "Failed to add session");
+    }
+  };
+
+  const updateSessionStatus = async (id: string, status: "pending" | "completed" | "skipped") => {
+    try {
+      // Find the session to update
+      const sessionToUpdate = sessions.find(session => session.id === id);
+      if (!sessionToUpdate) {
+        toast.error("Session not found");
+        return;
+      }
+      
+      // Get the old status to update subject counts correctly
+      const oldStatus = sessionToUpdate.status;
+      
+      // Update the session in Supabase
+      const { error } = await supabase
+        .from('sessions')
+        .update({ status })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setSessions(prev =>
+        prev.map(session =>
+          session.id === id ? { ...session, status } : session
+        )
+      );
+      
+      // Update the subject's completed/skipped session counts
+      if (oldStatus !== status) {
+        const subjectToUpdate = subjects.find(s => s.id === sessionToUpdate.subjectId);
+        
+        if (subjectToUpdate) {
+          const update = {};
+          
+          // Remove counts from old status
+          if (oldStatus === 'completed') update['completed_sessions'] = subjectToUpdate.completedSessions - 1;
+          if (oldStatus === 'skipped') update['skipped_sessions'] = subjectToUpdate.skippedSessions - 1;
+          
+          // Add counts to new status
+          if (status === 'completed') update['completed_sessions'] = (update['completed_sessions'] ?? subjectToUpdate.completedSessions) + 1;
+          if (status === 'skipped') update['skipped_sessions'] = (update['skipped_sessions'] ?? subjectToUpdate.skippedSessions) + 1;
+          
+          await supabase
+            .from('subjects')
+            .update(update)
+            .eq('id', sessionToUpdate.subjectId);
+          
+          setSubjects(prev =>
+            prev.map(subject => {
+              if (subject.id === sessionToUpdate.subjectId) {
+                let completedSessions = subject.completedSessions;
+                let skippedSessions = subject.skippedSessions;
+                
+                // Remove counts from old status
+                if (oldStatus === "completed") completedSessions -= 1;
+                if (oldStatus === "skipped") skippedSessions -= 1;
+                
+                // Add counts to new status
+                if (status === "completed") completedSessions += 1;
+                if (status === "skipped") skippedSessions += 1;
+                
+                return {
+                  ...subject,
+                  completedSessions,
+                  skippedSessions,
+                };
+              }
+              return subject;
+            })
+          );
+        }
+      }
+      
+      toast.success(`Session marked as ${status}`);
+    } catch (error: any) {
+      console.error("Error updating session status:", error);
+      toast.error(error.message || "Failed to update session status");
+    }
+  };
+
+  const deleteSession = async (id: string) => {
+    try {
+      // Find the session to delete
+      const sessionToDelete = sessions.find(session => session.id === id);
+      if (!sessionToDelete) {
+        toast.error("Session not found");
+        return;
+      }
+      
+      // Delete the session in Supabase
+      const { error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setSessions(prev => prev.filter(session => session.id !== id));
+      
+      // Update the subject's total sessions count and completed/skipped counts
+      const subjectToUpdate = subjects.find(s => s.id === sessionToDelete.subjectId);
+      
+      if (subjectToUpdate) {
+        const update = {
+          total_sessions: subjectToUpdate.totalSessions - 1
+        };
+        
+        if (sessionToDelete.status === 'completed') {
+          update['completed_sessions'] = subjectToUpdate.completedSessions - 1;
+        } else if (sessionToDelete.status === 'skipped') {
+          update['skipped_sessions'] = subjectToUpdate.skippedSessions - 1;
+        }
+        
+        await supabase
+          .from('subjects')
+          .update(update)
+          .eq('id', sessionToDelete.subjectId);
+        
+        setSubjects(prev =>
+          prev.map(subject => {
+            if (subject.id === sessionToDelete.subjectId) {
+              let completedSessions = subject.completedSessions;
+              let skippedSessions = subject.skippedSessions;
+              
+              if (sessionToDelete.status === "completed") completedSessions -= 1;
+              if (sessionToDelete.status === "skipped") skippedSessions -= 1;
+              
+              return {
+                ...subject,
+                totalSessions: subject.totalSessions - 1,
+                completedSessions,
+                skippedSessions,
+              };
+            }
+            return subject;
+          })
+        );
+      }
+      
+      toast.success("Session deleted");
+    } catch (error: any) {
+      console.error("Error deleting session:", error);
+      toast.error(error.message || "Failed to delete session");
+    }
   };
 
   return (

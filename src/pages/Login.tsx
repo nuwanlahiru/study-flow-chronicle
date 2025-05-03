@@ -43,25 +43,18 @@ const Login = () => {
             {loading ? "Logging in..." : "Login with Google"}
           </Button>
           
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                OR
-              </span>
-            </div>
-          </div>
-
           <Button 
-            onClick={() => login("demo")} 
+            onClick={() => login("facebook")} 
             disabled={loading} 
-            className="w-full gradient-bg"
+            className="w-full bg-[#4267B2] text-white hover:bg-[#3b5998]"
             size="lg"
           >
-            <LogIn className="mr-2 h-5 w-5" />
-            {loading ? "Logging in..." : "Use Demo Account"}
+            <img 
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/facebook.svg" 
+              alt="Facebook logo" 
+              className="h-5 w-5 mr-2" 
+            />
+            {loading ? "Logging in..." : "Login with Facebook"}
           </Button>
           
           <div className="relative">
@@ -70,12 +63,12 @@ const Login = () => {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Demo App Info
+                INFO
               </span>
             </div>
           </div>
           <p className="text-xs text-center text-muted-foreground">
-            This is a demo application that simulates authentication. In a production app, these would connect to actual OAuth providers.
+            Login with your social accounts to save your data in the cloud and access it from any device.
           </p>
         </CardContent>
         <CardFooter className="flex flex-col">

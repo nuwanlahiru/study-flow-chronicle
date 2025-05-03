@@ -92,10 +92,19 @@ const Sessions = () => {
 
   const handleSaveSession = (sessionData: Omit<Session, "id" | "status">) => {
     if (currentSession) {
+      // Add the current status when updating
+      const updatedSession = {
+        ...sessionData,
+        status: currentSession.status
+      };
       // For editing, we need to preserve the status
-      updateSessionStatus(currentSession.id, sessionData.status || currentSession.status);
+      updateSessionStatus(currentSession.id, updatedSession.status);
     } else {
-      addSession(sessionData);
+      // For new sessions, set status to pending
+      addSession({
+        ...sessionData,
+        status: "pending"
+      });
     }
     
     // If we came from a URL with a subjectId, clear it

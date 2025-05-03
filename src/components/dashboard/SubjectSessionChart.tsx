@@ -43,7 +43,7 @@ const SubjectSessionChart = () => {
       duration: 30, // Default duration (30 minutes)
       date: new Date().toISOString(),
       subjectId,
-      status: "pending" // Important: Add the status property
+      status: "pending" as "pending" | "completed" | "skipped" // Explicitly type this
     };
     
     addSession(newSession);

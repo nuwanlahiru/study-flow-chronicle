@@ -14,6 +14,7 @@ export type Session = {
   status: "pending" | "completed" | "skipped";
   date: string;
   subjectId: string;
+  userId?: string;
 };
 
 export type Subject = {

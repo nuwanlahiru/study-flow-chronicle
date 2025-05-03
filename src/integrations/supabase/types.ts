@@ -9,7 +9,113 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          id: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          display_name?: string | null
+          id: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string | null
+          date: string
+          description: string | null
+          duration: number
+          id: string
+          status: string
+          subject_id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          description?: string | null
+          duration: number
+          id?: string
+          status: string
+          subject_id: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          status?: string
+          subject_id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          color: string
+          completed_sessions: number
+          created_at: string | null
+          id: string
+          name: string
+          skipped_sessions: number
+          total_sessions: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color: string
+          completed_sessions?: number
+          created_at?: string | null
+          id?: string
+          name: string
+          skipped_sessions?: number
+          total_sessions?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string
+          completed_sessions?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          skipped_sessions?: number
+          total_sessions?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
