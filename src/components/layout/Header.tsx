@@ -22,6 +22,36 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const Header = () => {
   const { user, logout } = useAuth();
 
+  // Function to get initials from user metadata or email
+  const getUserInitials = () => {
+    if (!user) return "";
+    
+    // If we have metadata with a name
+    if (user.user_metadata && user.user_metadata.full_name) {
+      return user.user_metadata.full_name.split(" ")
+        .map((n: string) => n[0])
+        .join("");
+    }
+    
+    // Fallback to email
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    
+    return "U";
+  };
+
+  // Function to get display name
+  const getDisplayName = () => {
+    if (!user) return "";
+    
+    if (user.user_metadata && user.user_metadata.full_name) {
+      return user.user_metadata.full_name;
+    }
+    
+    return user.email || "User";
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
@@ -55,8 +85,11 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar>
-                    <AvatarImage src={user.photoURL} alt={user.name} />
-                    <AvatarFallback>{user.name.split(" ").map(n => n[0]).join("")}</AvatarFallback>
+                    <AvatarImage 
+                      src={user.user_metadata?.avatar_url} 
+                      alt={getDisplayName()} 
+                    />
+                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -65,7 +98,7 @@ const Header = () => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="flex items-center">
                   <User className="mr-2 h-4 w-4" />
-                  <span>{user.name}</span>
+                  <span>{getDisplayName()}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()} className="text-destructive flex items-center">

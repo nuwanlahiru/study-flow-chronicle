@@ -4,6 +4,7 @@ import { Subject, Session, StudySummary } from "@/types";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { Tables } from "@/integrations/supabase/types";
 
 interface StudyContextType {
   subjects: Subject[];
@@ -64,8 +65,30 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         
         if (sessionsError) throw sessionsError;
         
-        setSubjects(subjectsData as Subject[]);
-        setSessions(sessionsData as Session[]);
+        // Map Supabase data to our app types
+        const mappedSubjects: Subject[] = subjectsData.map((subject) => ({
+          id: subject.id,
+          name: subject.name,
+          color: subject.color,
+          totalSessions: subject.total_sessions,
+          completedSessions: subject.completed_sessions,
+          skippedSessions: subject.skipped_sessions,
+          userId: subject.user_id
+        }));
+
+        const mappedSessions: Session[] = sessionsData.map((session) => ({
+          id: session.id,
+          title: session.title,
+          description: session.description || undefined,
+          duration: session.duration,
+          status: session.status as "pending" | "completed" | "skipped",
+          date: session.date,
+          subjectId: session.subject_id,
+          userId: session.user_id
+        }));
+        
+        setSubjects(mappedSubjects);
+        setSessions(mappedSessions);
       } catch (error) {
         console.error("Error loading data:", error);
         toast.error("Failed to load your study data");
@@ -187,7 +210,18 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       
-      setSubjects(prev => [data as Subject, ...prev]);
+      // Convert Supabase response to our app type
+      const mappedSubject: Subject = {
+        id: data.id,
+        name: data.name,
+        color: data.color,
+        totalSessions: data.total_sessions,
+        completedSessions: data.completed_sessions,
+        skippedSessions: data.skipped_sessions,
+        userId: data.user_id
+      };
+      
+      setSubjects(prev => [mappedSubject, ...prev]);
       toast.success(`Added new subject: ${subject.name}`);
     } catch (error: any) {
       console.error("Error adding subject:", error);
@@ -197,9 +231,18 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
 
   const updateSubject = async (id: string, subjectUpdate: Partial<Subject>) => {
     try {
+      // Convert app type to Supabase format
+      const supabaseUpdate = {
+        ...(subjectUpdate.name !== undefined && { name: subjectUpdate.name }),
+        ...(subjectUpdate.color !== undefined && { color: subjectUpdate.color }),
+        ...(subjectUpdate.totalSessions !== undefined && { total_sessions: subjectUpdate.totalSessions }),
+        ...(subjectUpdate.completedSessions !== undefined && { completed_sessions: subjectUpdate.completedSessions }),
+        ...(subjectUpdate.skippedSessions !== undefined && { skipped_sessions: subjectUpdate.skippedSessions })
+      };
+      
       const { error } = await supabase
         .from('subjects')
-        .update(subjectUpdate)
+        .update(supabaseUpdate)
         .eq('id', id);
       
       if (error) throw error;
@@ -263,7 +306,19 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       
       if (error) throw error;
       
-      setSessions(prev => [data as Session, ...prev]);
+      // Convert Supabase response to our app type
+      const mappedSession: Session = {
+        id: data.id,
+        title: data.title,
+        description: data.description || undefined,
+        duration: data.duration,
+        status: data.status as "pending" | "completed" | "skipped",
+        date: data.date,
+        subjectId: data.subject_id,
+        userId: data.user_id
+      };
+      
+      setSessions(prev => [mappedSession, ...prev]);
       
       // Update the subject's total sessions count
       const subjectToUpdate = subjects.find(s => s.id === session.subjectId);
