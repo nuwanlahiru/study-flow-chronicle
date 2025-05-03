@@ -288,14 +288,37 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      // Find the highest session number for this subject
+      const subjectSessions = sessions.filter(s => s.subjectId === session.subjectId);
+      
+      // Determine the next session number
+      let nextSessionNumber = 1;
+      
+      if (subjectSessions.length > 0) {
+        // Extract session numbers from titles (S1, S2, etc.)
+        const sessionNumbers = subjectSessions.map(s => {
+          const match = s.title.match(/S(\d+)/i);
+          return match ? parseInt(match[1], 10) : 0;
+        });
+        
+        // Find the highest session number and increment by 1
+        nextSessionNumber = Math.max(...sessionNumbers) + 1;
+      }
+      
+      // Create the new session with the correct title
+      const updatedSession = {
+        ...session,
+        title: `S${nextSessionNumber}`
+      };
+      
       const newSession = {
         user_id: user.id,
-        subject_id: session.subjectId,
-        title: session.title,
-        description: session.description || null,
-        duration: session.duration,
-        date: session.date,
-        status: session.status
+        subject_id: updatedSession.subjectId,
+        title: updatedSession.title,
+        description: updatedSession.description || null,
+        duration: updatedSession.duration,
+        date: updatedSession.date,
+        status: updatedSession.status
       };
       
       const { data, error } = await supabase
@@ -352,7 +375,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         );
       }
       
-      toast.success(`Added new session: ${session.title}`);
+      toast.success(`Added new session: ${updatedSession.title}`);
     } catch (error: any) {
       console.error("Error adding session:", error);
       toast.error(error.message || "Failed to add session");

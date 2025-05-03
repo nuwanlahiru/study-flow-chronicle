@@ -107,7 +107,6 @@ const RecentSessions = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-40">
             <p className="text-muted-foreground">No upcoming sessions</p>
-            <Button className="mt-4 gradient-bg">Create a Session</Button>
           </div>
         )}
       </CardContent>

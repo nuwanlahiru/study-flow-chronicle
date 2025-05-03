@@ -35,10 +35,18 @@ const SubjectSessionChart = () => {
   // Handle adding a new session
   const handleAddSession = (subjectId: string) => {
     const subjectSessions = sessionsBySubject[subjectId] || [];
-    const sessionNumber = subjectSessions.length + 1;
+    
+    // Extract session numbers from titles (S1, S2, etc.)
+    const sessionNumbers = subjectSessions.map(s => {
+      const match = s.title.match(/S(\d+)/i);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+    
+    // Find the next session number
+    const nextSessionNumber = sessionNumbers.length > 0 ? Math.max(...sessionNumbers) + 1 : 1;
     
     const newSession = {
-      title: `S${sessionNumber}`,
+      title: `S${nextSessionNumber}`,
       description: "",
       duration: 30, // Default duration (30 minutes)
       date: new Date().toISOString(),
@@ -78,6 +86,8 @@ const SubjectSessionChart = () => {
             <tbody>
               {subjects.map(subject => {
                 const subjectSessions = sessionsBySubject[subject.id] || [];
+                
+                // Sort sessions by session number in the title
                 subjectSessions.sort((a, b) => {
                   // Extract session numbers from titles (S1, S2, etc.)
                   const numA = parseInt(a.title.replace(/\D/g, '') || '0');
