@@ -108,7 +108,7 @@ const SubjectCard = ({ subject, onEdit, onDelete }: SubjectCardProps) => {
                 'bg-muted/30'
               }`} 
               indicatorClassName={`${
-                isComplete ? 'bg-gradient-to-r from-studypurple-500 to-blue-500 animate-pulse' : 
+                isComplete ? 'bg-gradient-to-r from-studypurple-500 to-blue-500' : 
                 isSkipped ? 'bg-gradient-to-r from-red-400 to-pink-400' : 
                 ''
               }`} 
@@ -118,19 +118,30 @@ const SubjectCard = ({ subject, onEdit, onDelete }: SubjectCardProps) => {
           <div className="grid grid-cols-3 gap-2 pt-2">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Total</p>
-              <p className="font-medium">{subject.totalSessions}</p>
+              <motion.p 
+                className="font-medium"
+                whileHover={{ scale: 1.2 }}
+              >
+                {subject.totalSessions}
+              </motion.p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Completed</p>
-              <p className={`font-medium ${isComplete ? 'text-studypurple-700' : ''}`}>
+              <motion.p 
+                className={`font-medium ${isComplete ? 'text-studypurple-700' : ''}`}
+                whileHover={{ scale: 1.2 }}
+              >
                 {subject.completedSessions}
-              </p>
+              </motion.p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Skipped</p>
-              <p className={`font-medium ${isSkipped ? 'text-red-600' : ''}`}>
+              <motion.p 
+                className={`font-medium ${isSkipped ? 'text-red-600' : ''}`}
+                whileHover={{ scale: 1.2 }}
+              >
                 {subject.skippedSessions}
-              </p>
+              </motion.p>
             </div>
           </div>
         </div>

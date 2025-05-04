@@ -1,161 +1,58 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FireIcon, TrophyIcon, CalendarIcon, BookOpenIcon } from "lucide-react";
 import { useStudy } from "@/contexts/StudyContext";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from "recharts";
+import SummaryCard from "@/components/dashboard/SummaryCard";
+import { motion } from "framer-motion";
 
 const SummaryStats = () => {
-  const { summary, subjects } = useStudy();
-
-  // Prepare data for overall session status chart
-  const sessionStatusData = [
-    {
-      name: "Completed",
-      value: summary.completedSessions,
-      color: "#8B5CF6", // Purple
-    },
-    {
-      name: "Pending",
-      value: summary.pendingSessions,
-      color: "#E5E7EB", // Gray
-    },
-    {
-      name: "Skipped",
-      value: summary.skippedSessions,
-      color: "#F87171", // Red
-    },
-  ].filter(item => item.value > 0);
-
-  // Prepare data for subject distribution chart
-  const subjectSessionData = subjects.map(subject => ({
-    name: subject.name,
-    value: subject.totalSessions,
-    color: subject.color,
-  })).filter(item => item.value > 0);
-
-  // Format study time
-  const formatStudyTime = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} minutes`;
-    }
-    
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (remainingMinutes === 0) {
-      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
-    }
-    
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ${remainingMinutes} ${remainingMinutes === 1 ? "minute" : "minutes"}`;
-  };
+  const { summary } = useStudy();
+  
+  // Calculate completion rate
+  const completionRate = summary.totalSessions > 0
+    ? (summary.completedSessions / summary.totalSessions) * 100
+    : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Overall Stats</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Total Subjects</p>
-              <p className="text-2xl font-bold">{summary.totalSubjects}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Total Sessions</p>
-              <p className="text-2xl font-bold">{summary.totalSessions}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Study Time</p>
-              <p className="text-2xl font-bold">{formatStudyTime(summary.studyTimeCompleted)}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Streak</p>
-              <p className="text-2xl font-bold">{summary.streak} {summary.streak === 1 ? "day" : "days"}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Session Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {sessionStatusData.length > 0 ? (
-            <div className="h-60">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={sessionStatusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {sessionStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-60">
-              <p className="text-muted-foreground">No data available</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="md:col-span-2">
-        <CardHeader>
-          <CardTitle>Sessions by Subject</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {subjectSessionData.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={subjectSessionData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {subjectSessionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-80">
-              <p className="text-muted-foreground">No data available</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <SummaryCard
+        title="Current Streak"
+        value={`${summary.currentStreak} days`}
+        icon={<FireIcon className="h-4 w-4" />}
+        helpText="A streak is counting consecutive days with completed study sessions. Keep studying daily to build your streak!"
+      />
+      
+      <SummaryCard
+        title="Longest Streak"
+        value={`${summary.longestStreak} days`}
+        description={summary.longestStreak > summary.currentStreak ? "Keep going to beat it!" : "This is your best record!"}
+        icon={<TrophyIcon className="h-4 w-4" />}
+        helpText="The longest consecutive days you've maintained your study habit. Can you break your record?"
+      />
+      
+      <SummaryCard
+        title="Session Status"
+        value={`${summary.completedSessions}/${summary.totalSessions}`}
+        description={`${summary.skippedSessions} skipped`}
+        progress={completionRate}
+        icon={<CalendarIcon className="h-4 w-4" />}
+        helpText="Shows how many study sessions you've completed out of the total planned sessions."
+      />
+      
+      <SummaryCard
+        title="Subject Progress"
+        value={summary.subjects}
+        description={`${summary.completedSubjects} fully completed`}
+        icon={<BookOpenIcon className="h-4 w-4" />}
+        helpText="The number of subjects you're currently studying and how many are fully completed."
+      />
+    </motion.div>
   );
 };
 

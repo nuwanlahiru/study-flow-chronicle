@@ -4,9 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudy } from "@/contexts/StudyContext";
 import { Check, Circle, Minus, Plus, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "@/components/ui/sonner";
 
 const SubjectSessionChart = () => {
   const { subjects, sessions, updateSessionStatus, addSession, deleteSession, refreshSubjects, refreshSessions } = useStudy();
+  
+  // Ensure changes are reflected in the UI
+  useEffect(() => {
+    const refreshData = async () => {
+      await refreshSubjects();
+      await refreshSessions();
+    };
+    
+    refreshData();
+    // We only want this to run once when the component mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Group sessions by subject
   const sessionsBySubject = subjects.reduce((acc, subject) => {
@@ -31,18 +44,6 @@ const SubjectSessionChart = () => {
   // Add columns for the "add session" and "remove last session" buttons
   const totalColumns = maxSessions + 2;
   
-  // Ensure changes are reflected in the UI
-  useEffect(() => {
-    const refreshData = async () => {
-      await refreshSubjects();
-      await refreshSessions();
-    };
-    
-    refreshData();
-    // We only want this to run once when the component mounts
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
   // Handle session click
   const handleSessionClick = async (session: typeof sessions[0]) => {
     if (session.status === "pending") {
@@ -55,6 +56,7 @@ const SubjectSessionChart = () => {
     
     // Refresh data after status change
     await refreshSubjects();
+    await refreshSessions();
   };
   
   // Handle adding a new session
@@ -83,6 +85,7 @@ const SubjectSessionChart = () => {
     
     // Refresh data after adding
     await refreshSubjects();
+    await refreshSessions();
   };
   
   // Handle removing the last session of a subject
@@ -104,6 +107,7 @@ const SubjectSessionChart = () => {
       
       // Refresh data after removing
       await refreshSubjects();
+      await refreshSessions();
     }
   };
 
@@ -123,6 +127,69 @@ const SubjectSessionChart = () => {
     
     return "in-progress";
   };
+
+  // Show completion congratulations
+  const showCompletionCongratulations = (subjectName: string) => {
+    toast.custom((t) => (
+      <motion.div
+        className="bg-gradient-to-r from-studypurple-400 to-blue-400 p-6 rounded-lg shadow-xl text-white max-w-md mx-auto"
+        initial={{ opacity: 0, y: -50, scale: 0.8 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      >
+        <motion.h3 
+          className="text-xl font-bold mb-2"
+          initial={{ scale: 0.8 }}
+          animate={{ scale: [0.8, 1.2, 1] }}
+          transition={{ duration: 0.5 }}
+        >
+          Congratulations! 🎉
+        </motion.h3>
+        <p className="mb-2">You've completed all sessions for</p>
+        <p className="text-lg font-semibold">{subjectName}</p>
+        <div className="flex justify-center my-3">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="mx-1"
+              initial={{ y: 0 }}
+              animate={{ y: [0, -10, 0] }}
+              transition={{
+                repeat: 3,
+                duration: 0.5,
+                delay: i * 0.1
+              }}
+            >
+              🧁
+            </motion.div>
+          ))}
+        </div>
+        <p className="text-sm opacity-90">Keep up the great work!</p>
+      </motion.div>
+    ), { duration: 5000 });
+  };
+
+  // Check previous status of a subject to show congratulations only when newly completed
+  const [prevSubjectStatus, setPrevSubjectStatus] = React.useState<Record<string, string>>({});
+
+  // Update statuses and check for newly completed subjects
+  useEffect(() => {
+    const newStatuses: Record<string, string> = {};
+    
+    subjects.forEach(subject => {
+      const status = getSubjectStatus(subject.id);
+      newStatuses[subject.id] = status;
+      
+      // Check if subject was just completed
+      if (status === "completed" && prevSubjectStatus[subject.id] 
+          && prevSubjectStatus[subject.id] !== "completed") {
+        showCompletionCongratulations(subject.name);
+      }
+    });
+    
+    setPrevSubjectStatus(newStatuses);
+  }, [sessions, subjects]); // eslint-disable-line react-hooks/exhaustive-deps
   
   return (
     <Card className="col-span-1 md:col-span-3 overflow-x-auto backdrop-blur-md bg-white/70 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -176,9 +243,7 @@ const SubjectSessionChart = () => {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center">
                         <motion.div 
-                          className={`w-3 h-3 rounded-full mr-2 ${
-                            subjectStatus === 'completed' ? 'animate-pulse' : ''
-                          }`} 
+                          className="w-3 h-3 rounded-full mr-2" 
                           style={{ backgroundColor: subject.color }}
                           whileHover={{ scale: 1.5 }}
                         ></motion.div>
@@ -195,7 +260,7 @@ const SubjectSessionChart = () => {
                           }
                           {subjectStatus === 'skipped' && 
                             <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
-                              Skipped
+                              Needs Focus
                             </span>
                           }
                         </div>
@@ -228,10 +293,6 @@ const SubjectSessionChart = () => {
                                             '0 0 8px rgba(0,0,0,0.2)' 
                               }}
                               whileTap={{ scale: 0.9 }}
-                              animate={
-                                subjectComplete && session.status === "completed" ? 
-                                { y: [0, -2, 0], transition: { repeat: Infinity, duration: 2 } } : undefined
-                              }
                             >
                               {session.status === "pending" ? (
                                 <Circle size={16} />
@@ -256,7 +317,6 @@ const SubjectSessionChart = () => {
                         title="Add session"
                         whileHover={{ scale: 1.2, backgroundColor: "#9b87f5", color: "white", boxShadow: '0 0 10px rgba(155, 135, 245, 0.5)' }}
                         whileTap={{ scale: 0.9 }}
-                        initial={{ x: 0 }}
                       >
                         <Plus size={16} />
                       </motion.div>
@@ -270,7 +330,6 @@ const SubjectSessionChart = () => {
                         title="Remove last session"
                         whileHover={{ scale: 1.2, backgroundColor: "#fee2e2", color: "#b91c1c", boxShadow: '0 0 10px rgba(254, 226, 226, 0.5)' }}
                         whileTap={{ scale: 0.9 }}
-                        initial={{ x: 0 }}
                       >
                         <Minus size={16} />
                       </motion.div>

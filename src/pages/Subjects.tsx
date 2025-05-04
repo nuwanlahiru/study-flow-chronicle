@@ -6,6 +6,7 @@ import { Navigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useStudy } from "@/contexts/StudyContext";
 import SubjectCard from "@/components/subjects/SubjectCard";
+import SubjectSessionChart from "@/components/dashboard/SubjectSessionChart";
 import SubjectForm from "@/components/subjects/SubjectForm";
 import { Subject } from "@/types";
 import {
@@ -22,7 +23,7 @@ import { motion } from "framer-motion";
 
 const Subjects = () => {
   const { user } = useAuth();
-  const { subjects, addSubject, updateSubject, deleteSubject, loading } = useStudy();
+  const { subjects, addSubject, updateSubject, deleteSubject, loading, refreshSubjects } = useStudy();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentSubject, setCurrentSubject] = useState<Subject | undefined>(undefined);
@@ -64,6 +65,11 @@ const Subjects = () => {
     } else {
       addSubject(subjectData);
     }
+    
+    // Force refresh data to ensure everything is updated
+    setTimeout(() => {
+      refreshSubjects();
+    }, 500);
   };
 
   const handleDeleteConfirm = (id: string) => {
@@ -74,6 +80,11 @@ const Subjects = () => {
     if (subjectToDelete) {
       deleteSubject(subjectToDelete);
       setSubjectToDelete(null);
+      
+      // Force refresh data to ensure everything is updated
+      setTimeout(() => {
+        refreshSubjects();
+      }, 500);
     }
   };
 
@@ -94,6 +105,11 @@ const Subjects = () => {
             <Plus className="mr-2 h-4 w-4" /> Add Subject
           </Button>
         </motion.div>
+      </div>
+
+      {/* Subject-Session Chart */}
+      <div className="mb-6">
+        <SubjectSessionChart />
       </div>
 
       {subjects.length === 0 ? (

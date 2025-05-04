@@ -28,7 +28,7 @@ export const useSessions = (
       
       if (sessionsError) throw sessionsError;
       
-      // Map Supabase data to our app types
+      // Map Supabase data to our app types with proper type casting
       const mappedSessions: Session[] = sessionsData.map((session) => ({
         id: session.id,
         title: session.title,
@@ -36,7 +36,7 @@ export const useSessions = (
         duration: session.duration,
         date: session.date,
         subjectId: session.subject_id,
-        status: session.status,
+        status: session.status as "pending" | "completed" | "skipped", // Explicit type cast
         userId: session.user_id
       }));
       
@@ -125,11 +125,11 @@ export const useSessions = (
         duration: data.duration,
         date: data.date,
         subjectId: data.subject_id,
-        status: data.status,
+        status: data.status as "pending" | "completed" | "skipped", // Explicit type cast
         userId: data.user_id
       };
       
-      // Update local state
+      // Update local state - add to beginning of the array
       setSessions(prev => [newSession, ...prev]);
       
       // Update the subject's session counts

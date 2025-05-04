@@ -3,6 +3,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useStudy } from "@/contexts/StudyContext";
+import { HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion } from "framer-motion";
 
 interface SummaryCardProps {
@@ -11,9 +13,10 @@ interface SummaryCardProps {
   description?: string;
   icon: React.ReactNode;
   progress?: number;
+  helpText?: string;
 }
 
-const SummaryCard = ({ title, value, description, icon, progress }: SummaryCardProps) => {
+const SummaryCard = ({ title, value, description, icon, progress, helpText }: SummaryCardProps) => {
   return (
     <motion.div
       whileHover={{ 
@@ -24,7 +27,31 @@ const SummaryCard = ({ title, value, description, icon, progress }: SummaryCardP
     >
       <Card className="overflow-hidden transition-all transform backdrop-blur-md bg-white/70 border border-white/50 shadow-lg">
         <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0 bg-gradient-to-r from-studypurple-500/10 to-blue-500/10">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            
+            {/* Help tooltip shown on hover */}
+            {helpText && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.div
+                      className="cursor-help text-muted-foreground"
+                      whileHover={{ scale: 1.2 }}
+                    >
+                      <HelpCircle size={14} />
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    sideOffset={5}
+                    className="bg-white/90 backdrop-blur-md border border-studypurple-100 p-3 max-w-[250px] z-50 text-sm shadow-lg"
+                  >
+                    {helpText}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
           <motion.div 
             className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm border border-white/50 flex items-center justify-center text-studypurple-500"
             whileHover={{ scale: 1.2, rotate: 10 }}
