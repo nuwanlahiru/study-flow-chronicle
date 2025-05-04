@@ -17,7 +17,7 @@ const SummaryCard = ({ title, value, description, icon, progress }: SummaryCardP
   return (
     <motion.div
       whileHover={{ 
-        scale: 1.03,
+        scale: 1.05,
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" 
       }}
       transition={{ duration: 0.3 }}
@@ -42,6 +42,13 @@ const SummaryCard = ({ title, value, description, icon, progress }: SummaryCardP
               <p className="text-xs text-gray-600 mt-1">{Math.round(progress)}% completed</p>
             </div>
           )}
+          
+          {/* Fancy glass interaction effect */}
+          <div className="absolute inset-0 pointer-events-none rounded-lg opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <div className="absolute inset-0 rounded-lg overflow-hidden">
+              <div className="absolute -inset-[100%] opacity-0 group-hover:opacity-10 bg-gradient-to-r from-transparent via-white to-transparent transform -rotate-45 group-hover:animate-[shine_1.5s_ease-in-out]"></div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

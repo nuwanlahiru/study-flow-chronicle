@@ -117,26 +117,37 @@ const Subjects = () => {
           </motion.div>
         </motion.div>
       ) : (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((subject, index) => (
-            <motion.div
-              key={subject.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, duration: 0.4 }}
-              whileHover={{ 
-                y: -5,
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                transition: { duration: 0.2 }
-              }}
-            >
-              <SubjectCard
-                subject={subject}
-                onEdit={handleEditSubject}
-                onDelete={handleDeleteConfirm}
-              />
-            </motion.div>
-          ))}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
+          {subjects.map((subject, index) => {
+            const isComplete = subject.totalSessions > 0 && subject.completedSessions === subject.totalSessions;
+            const isSkipped = subject.totalSessions > 0 && subject.skippedSessions === subject.totalSessions;
+            
+            return (
+              <motion.div
+                key={subject.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05, duration: 0.4 }}
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: isComplete ? "0 10px 25px -5px rgba(155, 135, 245, 0.3)" : 
+                            isSkipped ? "0 10px 25px -5px rgba(254, 202, 202, 0.3)" :
+                            "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                  transition: { duration: 0.2 }
+                }}
+                className={`h-full ${
+                  isComplete ? 'scale-[1.02]' : 
+                  isSkipped ? 'grayscale-[0.3]' : ''
+                }`}
+              >
+                <SubjectCard
+                  subject={subject}
+                  onEdit={handleEditSubject}
+                  onDelete={handleDeleteConfirm}
+                />
+              </motion.div>
+            );
+          })}
         </div>
       )}
 

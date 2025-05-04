@@ -18,6 +18,8 @@ interface StudyContextType {
   updateSessionStatus: (id: string, status: "pending" | "completed" | "skipped") => void;
   deleteSession: (id: string) => void;
   loading: boolean;
+  refreshSubjects: () => void;
+  refreshSessions: () => void;
 }
 
 const StudyContext = createContext<StudyContextType | null>(null);
@@ -28,8 +30,8 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
   
   // Use our custom hooks to manage subjects and sessions
   const [subjectsState, setSubjectsState] = useState<Subject[]>([]);
-  const { subjects, addSubject, updateSubject, deleteSubject, loading: subjectsLoading } = useSubjects(userId);
-  const { sessions, addSession, updateSessionStatus, deleteSession, loading: sessionsLoading } = useSessions(userId, subjects, setSubjectsState);
+  const { subjects, addSubject, updateSubject, deleteSubject, loading: subjectsLoading, refreshSubjects } = useSubjects(userId);
+  const { sessions, addSession, updateSessionStatus, deleteSession, loading: sessionsLoading, refreshSessions } = useSessions(userId, subjects, setSubjectsState);
   const { streak, longestStreak, loading: streakLoading } = useStreak(userId);
   const { summary } = useSummary(subjects, sessions, streak, longestStreak);
 
@@ -49,6 +51,8 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         updateSessionStatus,
         deleteSession,
         loading,
+        refreshSubjects,
+        refreshSessions
       }}
     >
       {children}

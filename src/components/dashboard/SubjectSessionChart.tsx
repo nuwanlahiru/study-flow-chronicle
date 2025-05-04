@@ -1,12 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudy } from "@/contexts/StudyContext";
 import { Check, Circle, Minus, Plus, X } from "lucide-react";
 import { motion } from "framer-motion";
 
 const SubjectSessionChart = () => {
-  const { subjects, sessions, updateSessionStatus, addSession, deleteSession } = useStudy();
+  const { subjects, sessions, updateSessionStatus, addSession, deleteSession, refreshSubjects, refreshSessions } = useStudy();
   
   // Group sessions by subject
   const sessionsBySubject = subjects.reduce((acc, subject) => {
@@ -31,19 +31,34 @@ const SubjectSessionChart = () => {
   // Add columns for the "add session" and "remove last session" buttons
   const totalColumns = maxSessions + 2;
   
+  // Ensure changes are reflected in the UI
+  useEffect(() => {
+    const refreshData = async () => {
+      await refreshSubjects();
+      await refreshSessions();
+    };
+    
+    refreshData();
+    // We only want this to run once when the component mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   // Handle session click
-  const handleSessionClick = (session: typeof sessions[0]) => {
+  const handleSessionClick = async (session: typeof sessions[0]) => {
     if (session.status === "pending") {
-      updateSessionStatus(session.id, "completed");
+      await updateSessionStatus(session.id, "completed");
     } else if (session.status === "completed") {
-      updateSessionStatus(session.id, "skipped");
+      await updateSessionStatus(session.id, "skipped");
     } else {
-      updateSessionStatus(session.id, "pending");
+      await updateSessionStatus(session.id, "pending");
     }
+    
+    // Refresh data after status change
+    await refreshSubjects();
   };
   
   // Handle adding a new session
-  const handleAddSession = (subjectId: string) => {
+  const handleAddSession = async (subjectId: string) => {
     const subjectSessions = sessionsBySubject[subjectId] || [];
     
     // Extract session numbers from titles (S1, S2, etc.)
@@ -64,11 +79,14 @@ const SubjectSessionChart = () => {
       status: "pending" as "pending" | "completed" | "skipped" // Explicitly type this
     };
     
-    addSession(newSession);
+    await addSession(newSession);
+    
+    // Refresh data after adding
+    await refreshSubjects();
   };
   
   // Handle removing the last session of a subject
-  const handleRemoveLastSession = (subjectId: string) => {
+  const handleRemoveLastSession = async (subjectId: string) => {
     const subjectSessions = sessionsBySubject[subjectId] || [];
     
     if (subjectSessions.length === 0) return;
@@ -82,7 +100,10 @@ const SubjectSessionChart = () => {
     
     // Delete the session with the highest session number
     if (sortedSessions.length > 0) {
-      deleteSession(sortedSessions[0].id);
+      await deleteSession(sortedSessions[0].id);
+      
+      // Refresh data after removing
+      await refreshSubjects();
     }
   };
 
@@ -184,6 +205,8 @@ const SubjectSessionChart = () => {
                     {/* Render existing sessions */}
                     {Array.from({ length: maxSessions }).map((_, index) => {
                       const session = subjectSessions[index];
+                      const subjectComplete = subjectStatus === 'completed';
+                      const subjectSkipped = subjectStatus === 'skipped';
                       
                       return (
                         <td key={`${subject.id}-session-${index}`} 
@@ -192,12 +215,23 @@ const SubjectSessionChart = () => {
                             <motion.div 
                               onClick={() => handleSessionClick(session)}
                               className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
+                                subjectComplete && session.status === "completed" ? 'bg-gradient-to-r from-studypurple-400 to-blue-400 text-white shadow-md' :
+                                subjectSkipped && session.status === "skipped" ? 'bg-gradient-to-r from-red-300 to-pink-300 text-white shadow-md' :
                                 session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
                                 session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
                                 'bg-muted text-muted-foreground hover:bg-muted/80'
                               }`}
-                              whileHover={{ scale: 1.2, boxShadow: '0 0 8px rgba(0,0,0,0.2)' }}
+                              whileHover={{ 
+                                scale: 1.2, 
+                                boxShadow: subjectComplete ? '0 0 15px rgba(155,135,245,0.6)' : 
+                                            subjectSkipped ? '0 0 15px rgba(255,100,100,0.4)' :
+                                            '0 0 8px rgba(0,0,0,0.2)' 
+                              }}
                               whileTap={{ scale: 0.9 }}
+                              animate={
+                                subjectComplete && session.status === "completed" ? 
+                                { y: [0, -2, 0], transition: { repeat: Infinity, duration: 2 } } : undefined
+                              }
                             >
                               {session.status === "pending" ? (
                                 <Circle size={16} />
@@ -214,7 +248,7 @@ const SubjectSessionChart = () => {
                       );
                     })}
                     
-                    {/* Add session button */}
+                    {/* Add session button - fixed at the end */}
                     <td className="p-1 text-center">
                       <motion.div 
                         onClick={() => handleAddSession(subject.id)}
@@ -222,12 +256,13 @@ const SubjectSessionChart = () => {
                         title="Add session"
                         whileHover={{ scale: 1.2, backgroundColor: "#9b87f5", color: "white", boxShadow: '0 0 10px rgba(155, 135, 245, 0.5)' }}
                         whileTap={{ scale: 0.9 }}
+                        initial={{ x: 0 }}
                       >
                         <Plus size={16} />
                       </motion.div>
                     </td>
                     
-                    {/* Remove last session button */}
+                    {/* Remove last session button - fixed at the end */}
                     <td className="p-1 text-center">
                       <motion.div 
                         onClick={() => handleRemoveLastSession(subject.id)}
@@ -235,6 +270,7 @@ const SubjectSessionChart = () => {
                         title="Remove last session"
                         whileHover={{ scale: 1.2, backgroundColor: "#fee2e2", color: "#b91c1c", boxShadow: '0 0 10px rgba(254, 226, 226, 0.5)' }}
                         whileTap={{ scale: 0.9 }}
+                        initial={{ x: 0 }}
                       >
                         <Minus size={16} />
                       </motion.div>

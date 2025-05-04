@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Subject } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -8,44 +8,46 @@ export const useSubjects = (userId: string | undefined) => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load subjects from Supabase when userId changes
-  useEffect(() => {
-    async function loadSubjects() {
-      if (!userId) {
-        setSubjects([]);
-        return;
-      }
-      
-      try {
-        const { data: subjectsData, error: subjectsError } = await supabase
-          .from('subjects')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (subjectsError) throw subjectsError;
-        
-        // Map Supabase data to our app types
-        const mappedSubjects: Subject[] = subjectsData.map((subject) => ({
-          id: subject.id,
-          name: subject.name,
-          color: subject.color,
-          totalSessions: subject.total_sessions,
-          completedSessions: subject.completed_sessions,
-          skippedSessions: subject.skipped_sessions,
-          userId: subject.user_id
-        }));
-        
-        setSubjects(mappedSubjects);
-      } catch (error: any) {
-        console.error("Error loading subjects:", error);
-        toast.error(error.message || "Failed to load subjects");
-      } finally {
-        setLoading(false);
-      }
+  // Load subjects from Supabase
+  const loadSubjects = useCallback(async () => {
+    if (!userId) {
+      setSubjects([]);
+      setLoading(false);
+      return;
     }
     
-    loadSubjects();
+    try {
+      const { data: subjectsData, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (subjectsError) throw subjectsError;
+      
+      // Map Supabase data to our app types
+      const mappedSubjects: Subject[] = subjectsData.map((subject) => ({
+        id: subject.id,
+        name: subject.name,
+        color: subject.color,
+        totalSessions: subject.total_sessions,
+        completedSessions: subject.completed_sessions,
+        skippedSessions: subject.skipped_sessions,
+        userId: subject.user_id
+      }));
+      
+      setSubjects(mappedSubjects);
+    } catch (error: any) {
+      console.error("Error loading subjects:", error);
+      toast.error(error.message || "Failed to load subjects");
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
+
+  // Load subjects when userId changes
+  useEffect(() => {
+    loadSubjects();
+  }, [loadSubjects]);
 
   // CRUD operations for subjects
   const addSubject = async (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
@@ -140,12 +142,17 @@ export const useSubjects = (userId: string | undefined) => {
       toast.error(error.message || "Failed to delete subject");
     }
   };
+  
+  const refreshSubjects = useCallback(async () => {
+    await loadSubjects();
+  }, [loadSubjects]);
 
   return {
     subjects,
     addSubject,
     updateSubject,
     deleteSubject,
-    loading
+    loading,
+    refreshSubjects
   };
 };

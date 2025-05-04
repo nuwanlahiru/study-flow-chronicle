@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Link } from "react-router-dom";
@@ -19,16 +19,29 @@ const Dashboard = () => {
   const { summary, subjects, sessions, loading } = useStudy();
   
   // Cursor effect state
-  const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const mouseMoveTimeout = useRef<NodeJS.Timeout | null>(null);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (mouseMoveTimeout.current) {
+        clearTimeout(mouseMoveTimeout.current);
+      }
+      
       setMousePosition({ x: e.clientX, y: e.clientY });
+      
+      // Add throttling to avoid too many state updates
+      mouseMoveTimeout.current = setTimeout(() => {
+        mouseMoveTimeout.current = null;
+      }, 10);
     };
     
     window.addEventListener('mousemove', handleMouseMove);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
+      if (mouseMoveTimeout.current) {
+        clearTimeout(mouseMoveTimeout.current);
+      }
     };
   }, []);
   
@@ -67,18 +80,27 @@ const Dashboard = () => {
       transition={{ duration: 0.5 }}
     >
       {/* Glassmorphism cursor follower */}
-      <div 
-        className="pointer-events-none fixed hidden md:block h-32 w-32 rounded-full bg-studypurple-400/10 blur-3xl"
+      <motion.div 
+        className="pointer-events-none fixed hidden md:block h-40 w-40 rounded-full"
         style={{
-          left: mousePosition.x - 64,
-          top: mousePosition.y - 64,
+          left: mousePosition.x,
+          top: mousePosition.y,
+          background: 'radial-gradient(circle, rgba(155,135,245,0.15) 0%, rgba(155,135,245,0) 70%)',
           transform: 'translate(-50%, -50%)',
-          transition: 'transform 0.1s ease-out, opacity 0.3s ease-out',
-          zIndex: -1,
+          zIndex: 0,
+        }}
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.7, 0.9, 0.7],
+        }}
+        transition={{
+          duration: 3,
+          ease: "easeInOut",
+          repeat: Infinity
         }}
       />
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative">
         <motion.h1 
           className="text-3xl font-bold tracking-tight gradient-text"
           initial={{ opacity: 0, x: -20 }}
@@ -112,7 +134,7 @@ const Dashboard = () => {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-studypurple-100">
             <Book className="h-6 w-6 text-studypurple-400" />
           </div>
-          <h2 className="mt-4 text-lg font-semibold gradient-text">Get Started with CupCake's StudyFlow</h2>
+          <h2 className="mt-4 text-lg font-semibold gradient-text">Get Started with CupCake StudyFlow</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Create your first subject to begin tracking your study sessions
           </p>
@@ -183,7 +205,7 @@ const Dashboard = () => {
               whileHover={{ y: -5 }}
               transition={{ duration: 0.2 }}
             >
-              <Card className="backdrop-blur-md bg-white/70 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
+              <Card className="backdrop-blur-md bg-white/70 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
                 <CardHeader>
                   <CardTitle>Subjects at a Glance</CardTitle>
                 </CardHeader>

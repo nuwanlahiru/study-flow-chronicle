@@ -23,8 +23,8 @@ const SubjectMiniSummary = ({ subject, sessions }: SubjectMiniSummaryProps) => {
   return (
     <motion.div 
       className={`flex items-center gap-2 p-2 rounded-md ${
-        isComplete ? 'bg-studypurple-50/70' : 
-        isSkipped ? 'bg-red-50/70' : 
+        isComplete ? 'bg-studypurple-50/70 border-studypurple-200/50' : 
+        isSkipped ? 'bg-red-50/70 border-red-200/50' : 
         'bg-white/50'
       } backdrop-blur-sm border border-white/30`}
       whileHover={{ 
@@ -35,8 +35,15 @@ const SubjectMiniSummary = ({ subject, sessions }: SubjectMiniSummaryProps) => {
                         'rgba(255, 255, 255, 0.7)'
       }}
       transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
     >
-      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: subject.color }}></div>
+      <motion.div 
+        className="w-3 h-3 rounded-full" 
+        style={{ backgroundColor: subject.color }}
+        whileHover={{ scale: 1.5 }}
+        animate={isComplete ? { scale: [1, 1.2, 1], transition: { duration: 2, repeat: Infinity } } : undefined}
+      ></motion.div>
       <span className={`text-sm font-medium ${
         isComplete ? 'text-studypurple-700' :
         isSkipped ? 'text-red-600' :
@@ -44,9 +51,12 @@ const SubjectMiniSummary = ({ subject, sessions }: SubjectMiniSummaryProps) => {
       }`}>
         {subject.name}
         {isComplete && 
-          <span className="ml-2 text-xs bg-studypurple-100 text-studypurple-700 px-1.5 py-0.5 rounded">
+          <motion.span 
+            className="ml-2 text-xs bg-studypurple-100 text-studypurple-700 px-1.5 py-0.5 rounded"
+            animate={{ y: [0, -2, 0], transition: { duration: 2, repeat: Infinity } }}
+          >
             Complete
-          </span>
+          </motion.span>
         }
         {isSkipped && 
           <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
