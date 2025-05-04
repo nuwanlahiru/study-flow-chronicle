@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { FireIcon, TrophyIcon, CalendarIcon, BookOpenIcon } from "lucide-react";
+import { Flame, Trophy, Calendar, BookOpen } from "lucide-react";
 import { useStudy } from "@/contexts/StudyContext";
 import SummaryCard from "@/components/dashboard/SummaryCard";
 import { motion } from "framer-motion";
@@ -24,7 +24,7 @@ const SummaryStats = () => {
       <SummaryCard
         title="Current Streak"
         value={`${summary.currentStreak} days`}
-        icon={<FireIcon className="h-4 w-4" />}
+        icon={<Flame className="h-4 w-4" />}
         helpText="A streak is counting consecutive days with completed study sessions. Keep studying daily to build your streak!"
       />
       
@@ -32,7 +32,7 @@ const SummaryStats = () => {
         title="Longest Streak"
         value={`${summary.longestStreak} days`}
         description={summary.longestStreak > summary.currentStreak ? "Keep going to beat it!" : "This is your best record!"}
-        icon={<TrophyIcon className="h-4 w-4" />}
+        icon={<Trophy className="h-4 w-4" />}
         helpText="The longest consecutive days you've maintained your study habit. Can you break your record?"
       />
       
@@ -41,7 +41,7 @@ const SummaryStats = () => {
         value={`${summary.completedSessions}/${summary.totalSessions}`}
         description={`${summary.skippedSessions} skipped`}
         progress={completionRate}
-        icon={<CalendarIcon className="h-4 w-4" />}
+        icon={<Calendar className="h-4 w-4" />}
         helpText="Shows how many study sessions you've completed out of the total planned sessions."
       />
       
@@ -49,7 +49,7 @@ const SummaryStats = () => {
         title="Subject Progress"
         value={summary.subjects}
         description={`${summary.completedSubjects} fully completed`}
-        icon={<BookOpenIcon className="h-4 w-4" />}
+        icon={<BookOpen className="h-4 w-4" />}
         helpText="The number of subjects you're currently studying and how many are fully completed."
       />
     </motion.div>
