@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +44,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { motion } from "framer-motion";
 
 const Sessions = () => {
   const { user } = useAuth();
@@ -149,17 +151,22 @@ const Sessions = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      className="space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
+        <h1 className="text-3xl font-bold tracking-tight gradient-text">Sessions</h1>
         <div className="flex space-x-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
+              <Button variant="outline" className="bg-white/70 backdrop-blur-sm border border-white/50 hover:bg-white/80">
                 <Filter className="mr-2 h-4 w-4" /> Filter
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
+            <DropdownMenuContent className="w-56 bg-white/80 backdrop-blur-md border border-white/50">
               <DropdownMenuLabel>Filter by Subject</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
@@ -202,7 +209,7 @@ const Sessions = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-4 w-full max-w-md mx-auto mb-6">
+        <TabsList className="grid grid-cols-5 w-full max-w-md mx-auto mb-6 backdrop-blur-md bg-white/50 border border-white/30">
           <TabsTrigger value="all" className="flex items-center">
             <Calendar className="h-4 w-4 mr-2" />
             All
@@ -218,6 +225,10 @@ const Sessions = () => {
           <TabsTrigger value="skipped" className="flex items-center">
             <CalendarX className="h-4 w-4 mr-2" />
             Skipped
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center">
+            <SkipForward className="h-4 w-4 mr-2" />
+            Analytics
           </TabsTrigger>
         </TabsList>
         
@@ -236,6 +247,83 @@ const Sessions = () => {
         <TabsContent value="skipped">
           {renderSessionsList(sortedSessions)}
         </TabsContent>
+        
+        <TabsContent value="analytics">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Completion Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm">
+                    <span>Completed</span>
+                    <span className="font-medium">{sessions.filter(s => s.status === 'completed').length} sessions</span>
+                  </div>
+                  <Progress 
+                    value={(sessions.filter(s => s.status === 'completed').length / sessions.length) * 100 || 0} 
+                    className="h-2 bg-studypurple-100/30" 
+                    indicatorClassName="bg-gradient-to-r from-studypurple-500 to-blue-500" 
+                  />
+                  
+                  <div className="flex justify-between text-sm mt-4">
+                    <span>Pending</span>
+                    <span className="font-medium">{sessions.filter(s => s.status === 'pending').length} sessions</span>
+                  </div>
+                  <Progress 
+                    value={(sessions.filter(s => s.status === 'pending').length / sessions.length) * 100 || 0} 
+                    className="h-2 bg-studypurple-100/30" 
+                    indicatorClassName="bg-gray-300" 
+                  />
+                  
+                  <div className="flex justify-between text-sm mt-4">
+                    <span>Skipped</span>
+                    <span className="font-medium">{sessions.filter(s => s.status === 'skipped').length} sessions</span>
+                  </div>
+                  <Progress 
+                    value={(sessions.filter(s => s.status === 'skipped').length / sessions.length) * 100 || 0} 
+                    className="h-2 bg-studypurple-100/30" 
+                    indicatorClassName="bg-red-400" 
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Subject Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {subjects.map(subject => {
+                    const subjectSessions = sessions.filter(s => s.subjectId === subject.id);
+                    const percentage = (subjectSessions.length / sessions.length) * 100 || 0;
+                    
+                    return (
+                      <div key={subject.id} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <div className="flex items-center">
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ backgroundColor: subject.color }}
+                            />
+                            <span>{subject.name}</span>
+                          </div>
+                          <span className="font-medium">{percentage.toFixed(1)}%</span>
+                        </div>
+                        <Progress 
+                          value={percentage} 
+                          className="h-2 bg-studypurple-100/30" 
+                          indicatorClassName="bg-gradient-to-r from-studypurple-400 to-blue-400" 
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       <SessionForm
@@ -248,7 +336,7 @@ const Sessions = () => {
       />
 
       <AlertDialog open={!!sessionToDelete} onOpenChange={() => setSessionToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white/90 backdrop-blur-md border border-white/50">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -256,20 +344,25 @@ const Sessions = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-white/70 hover:bg-white/90">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 
   // Helper function to render sessions list
   function renderSessionsList(sessionsToRender: Session[]) {
     if (sessionsToRender.length === 0) {
       return (
-        <div className="border rounded-lg p-8 text-center">
-          <h2 className="text-lg font-semibold">No Sessions Found</h2>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="border rounded-lg p-8 text-center backdrop-blur-md bg-white/70 border-white/50"
+        >
+          <h2 className="text-lg font-semibold gradient-text">No Sessions Found</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {subjects.length === 0
               ? "Create subjects first before adding sessions"
@@ -282,25 +375,35 @@ const Sessions = () => {
           >
             <Plus className="mr-2 h-4 w-4" /> Add Session
           </Button>
-        </div>
+        </motion.div>
       );
     }
 
     return (
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {sessionsToRender.map(session => (
-          <SessionCard
+        {sessionsToRender.map((session, index) => (
+          <motion.div
             key={session.id}
-            session={session}
-            subject={getSubjectForSession(session.subjectId)}
-            onStatusChange={updateSessionStatus}
-            onEdit={handleEditSession}
-            onDelete={handleDeleteConfirm}
-          />
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+          >
+            <SessionCard
+              session={session}
+              subject={getSubjectForSession(session.subjectId)}
+              onStatusChange={updateSessionStatus}
+              onEdit={handleEditSession}
+              onDelete={handleDeleteConfirm}
+            />
+          </motion.div>
         ))}
       </div>
     );
   }
 };
+
+// Add necessary imports at the top
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 
 export default Sessions;

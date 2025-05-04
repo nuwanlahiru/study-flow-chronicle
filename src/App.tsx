@@ -11,6 +11,7 @@ import { StudyProvider } from "@/contexts/StudyContext";
 import Layout from "@/components/layout/Layout";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
 import Dashboard from "@/pages/Dashboard";
 import Subjects from "@/pages/Subjects";
 import Sessions from "@/pages/Sessions";
@@ -36,6 +37,7 @@ const App = () => {
                   <Route path="/" element={<Layout />}>
                     <Route index element={<Index />} />
                     <Route path="login" element={<Login />} />
+                    <Route path="signup" element={<Signup />} />
                     <Route path="dashboard" element={<Dashboard />} />
                     <Route path="subjects" element={<Subjects />} />
                     <Route path="sessions" element={<Sessions />} />

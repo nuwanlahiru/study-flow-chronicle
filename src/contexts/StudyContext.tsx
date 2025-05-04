@@ -32,6 +32,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     pendingSessions: 0,
     studyTimeCompleted: 0,
     streak: 0,
+    longestStreak: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -63,6 +64,47 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
           .order('date', { ascending: false });
         
         if (sessionsError) throw sessionsError;
+
+        // Fetch user stats
+        const { data: userStats, error: userStatsError } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        let streak = 0;
+        let longestStreak = 0;
+        let lastActiveDate = null;
+
+        if (userStatsError && userStatsError.code !== 'PGRST116') {
+          // PGRST116 means not found, which is expected if this is the user's first time
+          console.error("Error fetching user stats:", userStatsError);
+          toast.error("Failed to load user stats");
+        } else if (userStats) {
+          streak = userStats.current_streak;
+          longestStreak = userStats.longest_streak;
+          lastActiveDate = userStats.last_active_date;
+        }
+
+        // Check if user logged in today and update streak if needed
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (!lastActiveDate || lastActiveDate !== today) {
+          // User logged in on a new day
+          await updateUserStreak(user.id, today, streak, longestStreak);
+
+          // Update local streak values after updating in DB
+          const { data: updatedStats } = await supabase
+            .from('user_stats')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+            
+          if (updatedStats) {
+            streak = updatedStats.current_streak;
+            longestStreak = updatedStats.longest_streak;
+          }
+        }
         
         // Map Supabase data to our app types
         const mappedSubjects: Subject[] = subjectsData.map((subject) => ({
@@ -88,6 +130,23 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         
         setSubjects(mappedSubjects);
         setSessions(mappedSessions);
+
+        // Update summary with streak data
+        const completedSessions = mappedSessions.filter(session => session.status === "completed");
+        const skippedSessions = mappedSessions.filter(session => session.status === "skipped");
+        const pendingSessions = mappedSessions.filter(session => session.status === "pending");
+        const studyTimeCompleted = completedSessions.reduce((total, session) => total + session.duration, 0);
+
+        setSummary({
+          totalSubjects: mappedSubjects.length,
+          totalSessions: mappedSessions.length,
+          completedSessions: completedSessions.length,
+          skippedSessions: skippedSessions.length,
+          pendingSessions: pendingSessions.length,
+          studyTimeCompleted,
+          streak,
+          longestStreak,
+        });
       } catch (error) {
         console.error("Error loading data:", error);
         toast.error("Failed to load your study data");
@@ -99,18 +158,79 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     loadData();
   }, [user]);
 
+  // Helper function to update user streak in the database
+  const updateUserStreak = async (userId: string, today: string, currentStreak: number, currentLongestStreak: number) => {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      const { data: userStats, error } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      let newStreak = 1; // Default to 1 for new day login
+      let newLongestStreak = currentLongestStreak;
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error checking user stats:", error);
+        return;
+      }
+      
+      if (!userStats) {
+        // Create new record for first-time user
+        await supabase.from('user_stats').insert({
+          user_id: userId,
+          current_streak: newStreak,
+          longest_streak: newStreak,
+          last_active_date: today
+        });
+        return;
+      }
+      
+      // User has stats already
+      const lastActiveDate = userStats.last_active_date;
+      
+      if (lastActiveDate === yesterdayStr) {
+        // User was active yesterday, increment streak
+        newStreak = userStats.current_streak + 1;
+      } else if (lastActiveDate === today) {
+        // Already logged in today, keep current streak
+        newStreak = userStats.current_streak;
+      } else {
+        // Streak broken, start new streak at 1
+        newStreak = 1;
+      }
+      
+      // Update longest streak if needed
+      newLongestStreak = Math.max(newStreak, userStats.longest_streak);
+      
+      await supabase.from('user_stats').upsert({
+        user_id: userId,
+        current_streak: newStreak,
+        longest_streak: newLongestStreak,
+        last_active_date: today
+      });
+      
+    } catch (error) {
+      console.error("Error updating user streak:", error);
+    }
+  };
+
   // Update summary whenever subjects or sessions change
   useEffect(() => {
     if (subjects.length === 0 && sessions.length === 0) {
-      setSummary({
+      setSummary(prev => ({
+        ...prev,
         totalSubjects: 0,
         totalSessions: 0,
         completedSessions: 0,
         skippedSessions: 0,
         pendingSessions: 0,
         studyTimeCompleted: 0,
-        streak: 0,
-      });
+      }));
       return;
     }
 
@@ -121,68 +241,16 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     // Calculate study time from completed sessions
     const studyTimeCompleted = completedSessions.reduce((total, session) => total + session.duration, 0);
     
-    // Calculate streak
-    const streak = calculateStreak(completedSessions);
-
-    setSummary({
+    setSummary(prev => ({
+      ...prev,
       totalSubjects: subjects.length,
       totalSessions: sessions.length,
       completedSessions: completedSessions.length,
       skippedSessions: skippedSessions.length,
       pendingSessions: pendingSessions.length,
       studyTimeCompleted,
-      streak,
-    });
+    }));
   }, [subjects, sessions]);
-
-  // Helper function to calculate streak
-  const calculateStreak = (completedSessions: Session[]) => {
-    if (completedSessions.length === 0) return 0;
-    
-    // Sort sessions by date (most recent first)
-    const sortedSessions = [...completedSessions].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    
-    // Group sessions by date
-    const sessionsByDate: Record<string, Session[]> = {};
-    sortedSessions.forEach(session => {
-      const dateStr = new Date(session.date).toISOString().split('T')[0];
-      if (!sessionsByDate[dateStr]) {
-        sessionsByDate[dateStr] = [];
-      }
-      sessionsByDate[dateStr].push(session);
-    });
-    
-    // Convert to array of dates that have completed sessions
-    const datesWithSessions = Object.keys(sessionsByDate).sort().reverse();
-    
-    if (datesWithSessions.length === 0) return 0;
-    
-    // Check if today has a completed session
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (datesWithSessions[0] !== today) return 0;
-    
-    let streak = 1;
-    
-    // Calculate consecutive days with completed sessions
-    for (let i = 1; i < datesWithSessions.length; i++) {
-      const currentDate = new Date(datesWithSessions[i-1]);
-      const prevDate = new Date(datesWithSessions[i]);
-      
-      const diffTime = currentDate.getTime() - prevDate.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 1) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
-  };
 
   // CRUD operations for subjects
   const addSubject = async (subject: Omit<Subject, "id" | "userId" | "totalSessions" | "completedSessions" | "skippedSessions">) => {
@@ -287,11 +355,30 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      // Create the new session
+      // Find the subject
+      const subjectToUpdate = subjects.find(s => s.id === session.subjectId);
+      if (!subjectToUpdate) {
+        toast.error("Subject not found");
+        return;
+      }
+      
+      // Get existing sessions for this subject to determine the correct order
+      const subjectSessions = sessions.filter(s => s.subjectId === session.subjectId);
+      
+      // Extract session numbers from titles (S1, S2, etc.)
+      const sessionNumbers = subjectSessions.map(s => {
+        const match = s.title.match(/S(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+      });
+      
+      // Find the next session number (one more than the highest existing number)
+      const nextSessionNumber = sessionNumbers.length > 0 ? Math.max(...sessionNumbers) + 1 : 1;
+      
+      // Create the new session with correct title
       const newSession = {
         user_id: user.id,
         subject_id: session.subjectId,
-        title: session.title,
+        title: `S${nextSessionNumber}`,
         description: session.description || null,
         duration: session.duration,
         date: session.date,
@@ -321,38 +408,35 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       setSessions(prev => [mappedSession, ...prev]);
       
       // Update the subject's total sessions count
-      const subjectToUpdate = subjects.find(s => s.id === session.subjectId);
-      if (subjectToUpdate) {
-        const update = {
-          total_sessions: subjectToUpdate.totalSessions + 1
-        };
-        
-        if (session.status === 'completed') {
-          update['completed_sessions'] = subjectToUpdate.completedSessions + 1;
-        } else if (session.status === 'skipped') {
-          update['skipped_sessions'] = subjectToUpdate.skippedSessions + 1;
-        }
-        
-        await supabase
-          .from('subjects')
-          .update(update)
-          .eq('id', session.subjectId);
-          
-        setSubjects(prev =>
-          prev.map(subject =>
-            subject.id === session.subjectId
-              ? { 
-                  ...subject, 
-                  totalSessions: subject.totalSessions + 1,
-                  ...(session.status === 'completed' ? { completedSessions: subject.completedSessions + 1 } : {}),
-                  ...(session.status === 'skipped' ? { skippedSessions: subject.skippedSessions + 1 } : {})
-                }
-              : subject
-          )
-        );
+      const update = {
+        total_sessions: subjectToUpdate.totalSessions + 1
+      };
+      
+      if (session.status === 'completed') {
+        update['completed_sessions'] = subjectToUpdate.completedSessions + 1;
+      } else if (session.status === 'skipped') {
+        update['skipped_sessions'] = subjectToUpdate.skippedSessions + 1;
       }
       
-      toast.success(`Added new session: ${session.title}`);
+      await supabase
+        .from('subjects')
+        .update(update)
+        .eq('id', session.subjectId);
+        
+      setSubjects(prev =>
+        prev.map(subject =>
+          subject.id === session.subjectId
+            ? { 
+                ...subject, 
+                totalSessions: subject.totalSessions + 1,
+                ...(session.status === 'completed' ? { completedSessions: subject.completedSessions + 1 } : {}),
+                ...(session.status === 'skipped' ? { skippedSessions: subject.skippedSessions + 1 } : {})
+              }
+            : subject
+        )
+      );
+      
+      toast.success(`Added new session: ${data.title}`);
     } catch (error: any) {
       console.error("Error adding session:", error);
       toast.error(error.message || "Failed to add session");

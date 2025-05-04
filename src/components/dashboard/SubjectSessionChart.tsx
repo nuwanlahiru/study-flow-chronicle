@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudy } from "@/contexts/StudyContext";
 import { Check, Circle, Minus, Plus, X } from "lucide-react";
+import { motion } from "framer-motion";
 
 const SubjectSessionChart = () => {
   const { subjects, sessions, updateSessionStatus, addSession, deleteSession } = useStudy();
@@ -31,11 +32,6 @@ const SubjectSessionChart = () => {
       updateSessionStatus(session.id, "pending");
     }
   };
-
-  // Handle session delete
-  const handleDeleteSession = (sessionId: string) => {
-    deleteSession(sessionId);
-  };
   
   // Handle adding a new session
   const handleAddSession = (subjectId: string) => {
@@ -47,7 +43,7 @@ const SubjectSessionChart = () => {
       return match ? parseInt(match[1], 10) : 0;
     });
     
-    // Find the next session number
+    // Find the next session number (one more than the highest existing number)
     const nextSessionNumber = sessionNumbers.length > 0 ? Math.max(...sessionNumbers) + 1 : 1;
     
     const newSession = {
@@ -80,9 +76,26 @@ const SubjectSessionChart = () => {
       deleteSession(sortedSessions[0].id);
     }
   };
+
+  // Calculate status for each subject (completed, in-progress, not-started)
+  const getSubjectStatus = (subjectId: string) => {
+    const subjectSessions = sessionsBySubject[subjectId] || [];
+    
+    if (subjectSessions.length === 0) return "not-started";
+    
+    const completed = subjectSessions.every(s => s.status === "completed");
+    const skipped = subjectSessions.every(s => s.status === "skipped");
+    const mixed = subjectSessions.some(s => s.status === "completed") && subjectSessions.some(s => s.status === "skipped");
+    
+    if (completed) return "completed";
+    if (skipped) return "skipped";
+    if (mixed) return "mixed";
+    
+    return "in-progress";
+  };
   
   return (
-    <Card className="col-span-1 md:col-span-3 overflow-x-auto">
+    <Card className="col-span-1 md:col-span-3 overflow-x-auto backdrop-blur-md bg-white/70 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-300">
       <CardHeader>
         <CardTitle>Subject-Session Chart</CardTitle>
       </CardHeader>
@@ -90,7 +103,7 @@ const SubjectSessionChart = () => {
         <div className="min-w-full">
           <table className="min-w-full">
             <thead>
-              <tr className="bg-background">
+              <tr className="bg-transparent">
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" 
                     style={{ minWidth: "150px" }}>
                   Subject
@@ -110,6 +123,7 @@ const SubjectSessionChart = () => {
             <tbody>
               {subjects.map(subject => {
                 const subjectSessions = sessionsBySubject[subject.id] || [];
+                const subjectStatus = getSubjectStatus(subject.id);
                 
                 // Sort sessions by session number in the title
                 subjectSessions.sort((a, b) => {
@@ -120,11 +134,39 @@ const SubjectSessionChart = () => {
                 });
                 
                 return (
-                  <tr key={subject.id} className="border-t border-border">
+                  <motion.tr 
+                    key={subject.id} 
+                    className={`border-t border-white/30 ${
+                      subjectStatus === 'completed' ? 'bg-studypurple-50' :
+                      subjectStatus === 'skipped' ? 'bg-red-50' :
+                      'bg-transparent'
+                    }`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    whileHover={{ scale: 1.01 }}
+                  >
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: subject.color }}></div>
-                        <div className="text-sm font-medium text-foreground">{subject.name}</div>
+                        <motion.div 
+                          className={`w-3 h-3 rounded-full mr-2 ${
+                            subjectStatus === 'completed' ? 'animate-pulse' : ''
+                          }`} 
+                          style={{ backgroundColor: subject.color }}
+                          whileHover={{ scale: 1.5 }}
+                        ></motion.div>
+                        <div className={`text-sm font-medium ${
+                          subjectStatus === 'completed' ? 'text-studypurple-700' :
+                          subjectStatus === 'skipped' ? 'text-red-600' :
+                          'text-foreground'
+                        }`}>
+                          {subject.name}
+                          {subjectStatus === 'completed' && 
+                            <span className="ml-2 text-xs bg-studypurple-100 text-studypurple-700 px-1.5 py-0.5 rounded">
+                              Completed!
+                            </span>
+                          }
+                        </div>
                       </div>
                     </td>
                     
@@ -136,13 +178,15 @@ const SubjectSessionChart = () => {
                         <td key={`${subject.id}-session-${index}`} 
                             className="p-1 text-center">
                           {session ? (
-                            <div 
+                            <motion.div 
                               onClick={() => handleSessionClick(session)}
                               className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors ${
                                 session.status === "completed" ? 'bg-studypurple-400 text-white hover:bg-studypurple-500' : 
                                 session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
                                 'bg-muted text-muted-foreground hover:bg-muted/80'
                               }`}
+                              whileHover={{ scale: 1.2 }}
+                              whileTap={{ scale: 0.9 }}
                             >
                               {session.status === "pending" ? (
                                 <Circle size={16} />
@@ -151,7 +195,7 @@ const SubjectSessionChart = () => {
                               ) : (
                                 <X size={16} />
                               )}
-                            </div>
+                            </motion.div>
                           ) : (
                             <div className="w-8 h-8"></div>
                           )}
@@ -161,26 +205,30 @@ const SubjectSessionChart = () => {
                     
                     {/* Add session button */}
                     <td className="p-1 text-center">
-                      <div 
+                      <motion.div 
                         onClick={() => handleAddSession(subject.id)}
-                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-muted-foreground hover:bg-muted/80"
+                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-muted-foreground hover:bg-muted/80 backdrop-blur-sm"
                         title="Add session"
+                        whileHover={{ scale: 1.2, backgroundColor: "#9b87f5", color: "white" }}
+                        whileTap={{ scale: 0.9 }}
                       >
                         <Plus size={16} />
-                      </div>
+                      </motion.div>
                     </td>
                     
                     {/* Remove last session button */}
                     <td className="p-1 text-center">
-                      <div 
+                      <motion.div 
                         onClick={() => handleRemoveLastSession(subject.id)}
-                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-destructive hover:bg-destructive/20"
+                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-destructive hover:bg-destructive/20 backdrop-blur-sm"
                         title="Remove last session"
+                        whileHover={{ scale: 1.2, backgroundColor: "#fee2e2", color: "#b91c1c" }}
+                        whileTap={{ scale: 0.9 }}
                       >
                         <Minus size={16} />
-                      </div>
+                      </motion.div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>

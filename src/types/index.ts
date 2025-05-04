@@ -35,4 +35,5 @@ export type StudySummary = {
   pendingSessions: number;
   studyTimeCompleted: number; // in minutes
   streak: number; // consecutive days with at least one completed session
+  longestStreak: number; // longest streak ever achieved
 };

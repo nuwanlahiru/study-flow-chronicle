@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { motion } from "framer-motion";
 
 const Subjects = () => {
   const { user } = useAuth();
@@ -34,11 +35,16 @@ const Subjects = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
+      <motion.div 
+        className="flex items-center justify-center h-[60vh]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="text-center">
           <p className="text-lg font-medium">Loading subjects...</p>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -72,33 +78,64 @@ const Subjects = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      className="space-y-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Subjects</h1>
-        <Button onClick={handleAddSubject} className="gradient-bg">
-          <Plus className="mr-2 h-4 w-4" /> Add Subject
-        </Button>
+        <h1 className="text-3xl font-bold tracking-tight gradient-text">Subjects</h1>
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Button onClick={handleAddSubject} className="gradient-bg">
+            <Plus className="mr-2 h-4 w-4" /> Add Subject
+          </Button>
+        </motion.div>
       </div>
 
       {subjects.length === 0 ? (
-        <div className="border rounded-lg p-8 text-center">
-          <h2 className="text-lg font-semibold">No Subjects Yet</h2>
+        <motion.div 
+          className="border rounded-lg p-8 text-center backdrop-blur-md bg-white/70 border-white/50 shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <h2 className="text-lg font-semibold gradient-text">No Subjects Yet</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Create your first subject to start tracking your study sessions
           </p>
-          <Button onClick={handleAddSubject} className="mt-4 gradient-bg">
-            <Plus className="mr-2 h-4 w-4" /> Add Subject
-          </Button>
-        </div>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Button onClick={handleAddSubject} className="mt-4 gradient-bg">
+              <Plus className="mr-2 h-4 w-4" /> Add Subject
+            </Button>
+          </motion.div>
+        </motion.div>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map(subject => (
-            <SubjectCard
+          {subjects.map((subject, index) => (
+            <motion.div
               key={subject.id}
-              subject={subject}
-              onEdit={handleEditSubject}
-              onDelete={handleDeleteConfirm}
-            />
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.4 }}
+              whileHover={{ 
+                y: -5,
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                transition: { duration: 0.2 }
+              }}
+            >
+              <SubjectCard
+                subject={subject}
+                onEdit={handleEditSubject}
+                onDelete={handleDeleteConfirm}
+              />
+            </motion.div>
           ))}
         </div>
       )}
@@ -111,7 +148,7 @@ const Subjects = () => {
       />
 
       <AlertDialog open={!!subjectToDelete} onOpenChange={() => setSubjectToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white/90 backdrop-blur-md border border-white/50">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -119,12 +156,12 @@ const Subjects = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-white/70 hover:bg-white/90">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </motion.div>
   );
 };
 
