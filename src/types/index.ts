@@ -1,4 +1,5 @@
 
+
 export type User = {
   id: string;
   name: string;
@@ -37,3 +38,14 @@ export type StudySummary = {
   streak: number; // consecutive days with at least one completed session
   longestStreak: number; // longest streak ever achieved
 };
+
+export type UserStats = {
+  id: string;
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_active_date: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+

@@ -10,8 +10,17 @@ const SubjectSessionChart = () => {
   
   // Group sessions by subject
   const sessionsBySubject = subjects.reduce((acc, subject) => {
+    // Get sessions for this subject
     const subjectSessions = sessions.filter(session => session.subjectId === subject.id);
-    acc[subject.id] = subjectSessions;
+    
+    // Sort sessions by session number in the title (S1, S2, etc.)
+    const sortedSessions = [...subjectSessions].sort((a, b) => {
+      const numA = parseInt(a.title.replace(/\D/g, '') || '0');
+      const numB = parseInt(b.title.replace(/\D/g, '') || '0');
+      return numA - numB; // Ascending order - ensure oldest sessions are first
+    });
+    
+    acc[subject.id] = sortedSessions;
     return acc;
   }, {} as Record<string, typeof sessions>);
   
@@ -68,7 +77,7 @@ const SubjectSessionChart = () => {
     const sortedSessions = [...subjectSessions].sort((a, b) => {
       const numA = parseInt(a.title.replace(/\D/g, '') || '0');
       const numB = parseInt(b.title.replace(/\D/g, '') || '0');
-      return numB - numA; // Descending order
+      return numB - numA; // Descending order - highest number first
     });
     
     // Delete the session with the highest session number
@@ -125,14 +134,6 @@ const SubjectSessionChart = () => {
                 const subjectSessions = sessionsBySubject[subject.id] || [];
                 const subjectStatus = getSubjectStatus(subject.id);
                 
-                // Sort sessions by session number in the title
-                subjectSessions.sort((a, b) => {
-                  // Extract session numbers from titles (S1, S2, etc.)
-                  const numA = parseInt(a.title.replace(/\D/g, '') || '0');
-                  const numB = parseInt(b.title.replace(/\D/g, '') || '0');
-                  return numA - numB;
-                });
-                
                 return (
                   <motion.tr 
                     key={subject.id} 
@@ -144,7 +145,12 @@ const SubjectSessionChart = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    whileHover={{ scale: 1.01 }}
+                    whileHover={{ 
+                      scale: 1.01, 
+                      backgroundColor: subjectStatus === 'completed' ? 'rgba(156, 133, 243, 0.2)' : 
+                                      subjectStatus === 'skipped' ? 'rgba(254, 202, 202, 0.3)' : 
+                                      'rgba(255, 255, 255, 0.2)'
+                    }}
                   >
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center">
@@ -166,6 +172,11 @@ const SubjectSessionChart = () => {
                               Completed!
                             </span>
                           }
+                          {subjectStatus === 'skipped' && 
+                            <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                              Skipped
+                            </span>
+                          }
                         </div>
                       </div>
                     </td>
@@ -185,7 +196,7 @@ const SubjectSessionChart = () => {
                                 session.status === "skipped" ? 'bg-destructive/20 text-destructive hover:bg-destructive/30' : 
                                 'bg-muted text-muted-foreground hover:bg-muted/80'
                               }`}
-                              whileHover={{ scale: 1.2 }}
+                              whileHover={{ scale: 1.2, boxShadow: '0 0 8px rgba(0,0,0,0.2)' }}
                               whileTap={{ scale: 0.9 }}
                             >
                               {session.status === "pending" ? (
@@ -207,9 +218,9 @@ const SubjectSessionChart = () => {
                     <td className="p-1 text-center">
                       <motion.div 
                         onClick={() => handleAddSession(subject.id)}
-                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-muted-foreground hover:bg-muted/80 backdrop-blur-sm"
+                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-white/80 border border-studypurple-200 text-studypurple-600 hover:bg-white backdrop-blur-sm"
                         title="Add session"
-                        whileHover={{ scale: 1.2, backgroundColor: "#9b87f5", color: "white" }}
+                        whileHover={{ scale: 1.2, backgroundColor: "#9b87f5", color: "white", boxShadow: '0 0 10px rgba(155, 135, 245, 0.5)' }}
                         whileTap={{ scale: 0.9 }}
                       >
                         <Plus size={16} />
@@ -220,9 +231,9 @@ const SubjectSessionChart = () => {
                     <td className="p-1 text-center">
                       <motion.div 
                         onClick={() => handleRemoveLastSession(subject.id)}
-                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-muted text-destructive hover:bg-destructive/20 backdrop-blur-sm"
+                        className="w-8 h-8 mx-auto rounded-full flex items-center justify-center cursor-pointer transition-colors bg-white/80 border border-red-200 text-destructive hover:bg-white backdrop-blur-sm"
                         title="Remove last session"
-                        whileHover={{ scale: 1.2, backgroundColor: "#fee2e2", color: "#b91c1c" }}
+                        whileHover={{ scale: 1.2, backgroundColor: "#fee2e2", color: "#b91c1c", boxShadow: '0 0 10px rgba(254, 226, 226, 0.5)' }}
                         whileTap={{ scale: 0.9 }}
                       >
                         <Minus size={16} />

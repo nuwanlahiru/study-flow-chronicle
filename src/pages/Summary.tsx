@@ -22,9 +22,14 @@ const Summary = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <p className="text-lg font-medium">Loading summary data...</p>
-        </div>
+        <motion.div 
+          className="text-center p-8 rounded-xl backdrop-blur-md bg-white/70 border border-white/50 shadow-lg"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <p className="text-lg font-medium gradient-text">Loading summary data...</p>
+        </motion.div>
       </div>
     );
   }
@@ -47,6 +52,10 @@ const Summary = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
+          whileHover={{ 
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            translateY: -5
+          }}
         >
           <h2 className="text-lg font-semibold gradient-text">No Data to Summarize</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -75,7 +84,10 @@ const Summary = () => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.3, duration: 0.5 }}
-      whileHover={{ scale: 1.03 }}
+      whileHover={{ 
+        scale: 1.03,
+        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+      }}
     >
       <div className="flex items-center space-x-4">
         <div className="flex flex-col items-center">
@@ -128,7 +140,14 @@ const Summary = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight gradient-text">Study Summary</h1>
+        <motion.h1 
+          className="text-3xl font-bold tracking-tight gradient-text"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          Study Summary
+        </motion.h1>
       </div>
       
       <StreakDisplay current={summary.streak} longest={summary.longestStreak} />

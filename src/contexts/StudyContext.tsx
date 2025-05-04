@@ -1,9 +1,9 @@
+
 import React, { createContext, useState, useEffect, useContext } from "react";
-import { Subject, Session, StudySummary } from "@/types";
+import { Subject, Session, StudySummary, UserStats } from "@/types";
 import { useAuth } from "./AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
-import { Tables } from "@/integrations/supabase/types";
 
 interface StudyContextType {
   subjects: Subject[];
@@ -65,8 +65,8 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         
         if (sessionsError) throw sessionsError;
 
-        // Fetch user stats
-        const { data: userStats, error: userStatsError } = await supabase
+        // Fetch user stats - Use explicit typing for the query
+        const { data: userStatsData, error: userStatsError } = await supabase
           .from('user_stats')
           .select('*')
           .eq('user_id', user.id)
@@ -80,7 +80,9 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
           // PGRST116 means not found, which is expected if this is the user's first time
           console.error("Error fetching user stats:", userStatsError);
           toast.error("Failed to load user stats");
-        } else if (userStats) {
+        } else if (userStatsData) {
+          // Cast the data to our UserStats type
+          const userStats = userStatsData as unknown as UserStats;
           streak = userStats.current_streak;
           longestStreak = userStats.longest_streak;
           lastActiveDate = userStats.last_active_date;
@@ -94,13 +96,14 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
           await updateUserStreak(user.id, today, streak, longestStreak);
 
           // Update local streak values after updating in DB
-          const { data: updatedStats } = await supabase
+          const { data: updatedStatsData } = await supabase
             .from('user_stats')
             .select('*')
             .eq('user_id', user.id)
             .single();
             
-          if (updatedStats) {
+          if (updatedStatsData) {
+            const updatedStats = updatedStatsData as unknown as UserStats;
             streak = updatedStats.current_streak;
             longestStreak = updatedStats.longest_streak;
           }
@@ -165,7 +168,8 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
       
-      const { data: userStats, error } = await supabase
+      // Use explicit casting for TypeScript
+      const { data: userStatsData, error } = await supabase
         .from('user_stats')
         .select('*')
         .eq('user_id', userId)
@@ -179,7 +183,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      if (!userStats) {
+      if (!userStatsData) {
         // Create new record for first-time user
         await supabase.from('user_stats').insert({
           user_id: userId,
@@ -191,6 +195,7 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       }
       
       // User has stats already
+      const userStats = userStatsData as unknown as UserStats;
       const lastActiveDate = userStats.last_active_date;
       
       if (lastActiveDate === yesterdayStr) {
@@ -207,12 +212,11 @@ export function StudyProvider({ children }: { children: React.ReactNode }) {
       // Update longest streak if needed
       newLongestStreak = Math.max(newStreak, userStats.longest_streak);
       
-      await supabase.from('user_stats').upsert({
-        user_id: userId,
+      await supabase.from('user_stats').update({
         current_streak: newStreak,
         longest_streak: newLongestStreak,
         last_active_date: today
-      });
+      }).eq('user_id', userId);
       
     } catch (error) {
       console.error("Error updating user streak:", error);
