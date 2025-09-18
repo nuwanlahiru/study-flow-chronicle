@@ -29,11 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // Handle successful login redirect
         if (event === 'SIGNED_IN' && session) {
-          // Check if we're on a callback URL and redirect to dashboard
-          const currentPath = window.location.pathname;
-          if (currentPath === '/dashboard' || window.location.hash.includes('access_token')) {
-            // Clear URL fragments and redirect
-            window.history.replaceState({}, document.title, '/dashboard');
+          // Clear any URL fragments and navigate to dashboard
+          if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            navigate('/dashboard');
           }
         }
       }
@@ -58,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin + '/dashboard'
+          redirectTo: `${window.location.origin}/`
         }
       });
       
