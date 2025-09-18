@@ -22,14 +22,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Handle successful login redirect
+        if (event === 'SIGNED_IN' && session) {
+          // Check if we're on a callback URL and redirect to dashboard
+          const currentPath = window.location.pathname;
+          if (currentPath === '/dashboard' || window.location.hash.includes('access_token')) {
+            // Clear URL fragments and redirect
+            window.history.replaceState({}, document.title, '/dashboard');
+          }
+        }
       }
     );
     
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
       setUser(session?.user ?? null);
       setLoading(false);
     });

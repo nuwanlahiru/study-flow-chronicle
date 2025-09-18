@@ -36,7 +36,7 @@ export const useSessions = (
         duration: session.duration,
         date: session.date,
         subjectId: session.subject_id,
-        status: session.status,
+        status: session.status as "pending" | "completed" | "skipped",
         userId: session.user_id
       }));
       
@@ -125,7 +125,7 @@ export const useSessions = (
         duration: data.duration,
         date: data.date,
         subjectId: data.subject_id,
-        status: data.status,
+        status: data.status as "pending" | "completed" | "skipped",
         userId: data.user_id
       };
       
