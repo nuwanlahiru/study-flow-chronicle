@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      sessions: {
+        Row: {
+          created_at: string
+          date: string
+          description: string | null
+          duration: number
+          id: string
+          status: string
+          subject_id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string | null
+          duration: number
+          id?: string
+          status: string
+          subject_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          status?: string
+          subject_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subjects: {
+        Row: {
+          color: string
+          completed_sessions: number
+          created_at: string
+          id: string
+          name: string
+          skipped_sessions: number
+          total_sessions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color: string
+          completed_sessions?: number
+          created_at?: string
+          id?: string
+          name: string
+          skipped_sessions?: number
+          total_sessions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          completed_sessions?: number
+          created_at?: string
+          id?: string
+          name?: string
+          skipped_sessions?: number
+          total_sessions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_active_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
